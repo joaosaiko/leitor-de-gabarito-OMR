@@ -52,8 +52,10 @@ if len(rectCon) >= 4:
 def get_marked_choice(thresh_question):
     cols = np.hsplit(thresh_question, choices)
     pixel_counts = [cv2.countNonZero(col) for col in cols]
+    print(pixel_counts)
     max_value = max(pixel_counts)
-    if max_value < 100:  # Threshold de marcação
+    # valor médio 520 anula marcações parcialmente preenchidas
+    if max_value < 520:  # Threshold de marcação
         return None
     return chr(65 + pixel_counts.index(max_value))  # A-E
 
