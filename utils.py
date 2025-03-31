@@ -72,17 +72,3 @@ def reorder(myPoints):
     myPointsNew[2] = myPoints[np.argmax(diff)]   # canto inferior esquerdo
 
     return myPointsNew
-
-def splitBoxes(img):
-    num_linhas = img.shape[0] // 10  # Tentativa inicial: dividir em 10 linhas
-    if img.shape[0] % num_linhas != 0:
-        print(f"Erro: Altura {img.shape[0]} não pode ser dividida igualmente em {num_linhas} partes.")
-        return
-    
-    rows = np.vsplit(img, num_linhas)
-
-    for i, row in enumerate(rows):
-        cv2.imshow(f"Questão {i+1}", row)  # Exibir cada linha separadamente
-    
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
