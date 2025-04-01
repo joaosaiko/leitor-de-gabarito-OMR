@@ -2,11 +2,27 @@ import cv2
 import numpy as np
 import os
 import utils  # Certifique-se de que utils.py está implementado corretamente
+from pdf2image import convert_from_path
+
+output_jpeg = "jpeg"
+os.makedirs(output_jpeg, exist_ok=True)
+
+#Converter PDF para JPEG
+# Converter PDF para JPEG
+pdf_path = "7.pdf"  # Substitua pelo nome do seu arquivo PDF
+pages = convert_from_path(pdf_path, dpi=300)  # Converte todas as páginas em imagens
+
+# Salvar a primeira página como JPEG
+jpeg_path = os.path.join(output_jpeg, "pagina_1.jpeg")
+pages[0].save(jpeg_path, "JPEG")
+
+# Atualiza a variável path com o caminho da imagem JPEG gerada
+path = jpeg_path
+print(path)
 
 # Configurações
-path = "7.jpeg"
-widthImg = 2000
-heightImg = 1600
+widthImg = 3000
+heightImg = 2600
 questions = 60
 choices = 5
 columns = 4
@@ -50,14 +66,16 @@ if len(rectCon) >= 4:
 
 # Estrutura para identificar as respostas marcadas
 def get_marked_choice(thresh_question):
+    height, width = thresh_question.shape
+    new_width = width - (width % choices)  # corta o excesso
+    thresh_question = thresh_question[:, :new_width]  # faz crop da largura
     cols = np.hsplit(thresh_question, choices)
     pixel_counts = [cv2.countNonZero(col) for col in cols]
     print(pixel_counts)
     max_value = max(pixel_counts)
-    # valor médio 520 anula marcações parcialmente preenchidas
-    if max_value < 520:  # Threshold de marcação
+    if max_value < 800:
         return None
-    return chr(65 + pixel_counts.index(max_value))  # A-E
+    return chr(65 + pixel_counts.index(max_value))
 
 respostas = []
 for idx_coluna, path_coluna in enumerate(colunas_paths):
@@ -77,13 +95,13 @@ print("\nRespostas Identificadas:")
 for numero, resposta in respostas:
     print(f"Questão {numero:02d}: {resposta if resposta else 'Sem marcação'}")
 
-# usado apenas para visualização (opcional)
+#usado apenas para visualização (opcional)
 # imgBlank = np.zeros_like(img)
 # imageArray = ([img, imgGray, imgBlur, imgCanny],
-#              [imgContours, imgBigContours, imgBlank, imgBlank])
+#               [imgContours, imgBigContours, imgBlank, imgBlank])
 # imgStacked = utils.stackImages(imageArray, 0.5)
 
-#cv2.imshow("Stacked Images", imgStacked)
+# cv2.imshow("Stacked Images", imgStacked)
 
 cv2.waitKey(0)
 cv2.destroyAllWindows()
