@@ -1,15 +1,22 @@
 import cv2
 import numpy as np
 import os
-import utils  # Certifique-se de que utils.py está implementado corretamente
+import utils
 from pdf2image import convert_from_path
+import json
 
+# Criar pastas de saída
 output_jpeg = "jpeg"
-os.makedirs(output_jpeg, exist_ok=True)
+os.makedirs("jpeg", exist_ok=True)
 
-#Converter PDF para JPEG
+output_json = "json"
+os.makedirs("json", exist_ok=True)
+
+output_cutout = "recortes"
+os.makedirs(output_cutout, exist_ok=True)
+
 # Converter PDF para JPEG
-pdf_path = "7.pdf"  # Substitua pelo nome do seu arquivo PDF
+pdf_path = "9.pdf"  # Substitua pelo nome do seu arquivo PDF
 pages = convert_from_path(pdf_path, dpi=300)  # Converte todas as páginas em imagens
 
 # Salvar a primeira página como JPEG
@@ -18,7 +25,6 @@ pages[0].save(jpeg_path, "JPEG")
 
 # Atualiza a variável path com o caminho da imagem JPEG gerada
 path = jpeg_path
-print(path)
 
 # Configurações
 widthImg = 3000
@@ -27,8 +33,6 @@ questions = 60
 choices = 5
 columns = 4
 questions_per_col = questions // columns  # 15 por coluna
-output_folder = "recortes"
-os.makedirs(output_folder, exist_ok=True)
 
 # Carregar e redimensionar imagem
 img = cv2.imread(path)
@@ -59,7 +63,7 @@ if len(rectCon) >= 4:
         imgColuna = img[y:y+h, x:x+w]
         imgWarpGray = cv2.cvtColor(imgColuna, cv2.COLOR_BGR2GRAY)
         imgThresh = cv2.threshold(imgWarpGray, 160, 255, cv2.THRESH_BINARY_INV)[1]
-        save_path = os.path.join(output_folder, f"coluna_{idx+1}.png")
+        save_path = os.path.join(output_cutout, f"coluna_{idx+1}.png")
         cv2.imwrite(save_path, imgThresh)
         colunas_paths.append(save_path)
         print(f"Salvo: {save_path}")
@@ -90,10 +94,28 @@ for idx_coluna, path_coluna in enumerate(colunas_paths):
         numero_questao = idx_coluna * questions_per_col + i + 1
         respostas.append((numero_questao, resposta))
 
-# Mostrar as respostas identificadas
-print("\nRespostas Identificadas:")
-for numero, resposta in respostas:
-    print(f"Questão {numero:02d}: {resposta if resposta else 'Sem marcação'}")
+# guardar respostas identificadas em um arquivo json na pasta json
+caminho = {}
+resposta_ident, resposta_null = 0, 0
+for num, resposta in respostas:
+    if resposta:
+        resposta_ident += 1
+    else:
+        resposta_null += 1
+    caminho[num] = resposta
+
+# adiciona contagens ao dicionário
+caminho["_resumo"] = {
+    "respostas_identificadas": resposta_ident,
+    "respostas_nulas": resposta_null
+}
+
+with open(os.path.join(output_json, "respostas.json"), "w") as json_file:
+    json.dump(caminho, json_file, indent=4)
+
+#print("\nRespostas Identificadas:")
+#for numero, resposta in respostas:
+#    print(f"Questão {numero:02d}: {resposta if resposta else 'Sem marcação'}")
 
 #usado apenas para visualização (opcional)
 # imgBlank = np.zeros_like(img)
