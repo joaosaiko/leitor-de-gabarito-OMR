@@ -1,3 +1,4 @@
+# OMR_Main.py
 import cv2
 import numpy as np
 import os
@@ -59,17 +60,18 @@ if len(rectCon) >= 4:
 
     for idx, points in enumerate(gradePoints):
         cv2.drawContours(imgBigContours, points, -1, (0, 255, 0), 20)
-        x, y, w, h = cv2.boundingRect(points)
-        imgColuna = img[y:y+h, x:x+w]
-        imgWarpGray = cv2.cvtColor(imgColuna, cv2.COLOR_BGR2GRAY)
-        imgThresh = cv2.threshold(imgWarpGray, 160, 255, cv2.THRESH_BINARY_INV)[1]
+        x, y, w, h = cv2.boundingRect(points) # recorta a coluna
+        imgColuna = img[y:y+h, x:x+w] # recorta a coluna
+        imgWarpGray = cv2.cvtColor(imgColuna, cv2.COLOR_BGR2GRAY)  
+        imgThresh = cv2.threshold(imgWarpGray, 160, 255, cv2.THRESH_BINARY_INV)[1] 
         save_path = os.path.join(output_cutout, f"coluna_{idx+1}.png")
         cv2.imwrite(save_path, imgThresh)
         colunas_paths.append(save_path)
         print(f"Salvo: {save_path}")
 
-# Estrutura para identificar as respostas marcadas
 def get_marked_choice(thresh_question):
+    '''Identifica a resposta marcada em uma questão de múltipla escolha.'''
+
     height, width = thresh_question.shape
     new_width = width - (width % choices)  # corta o excesso
     thresh_question = thresh_question[:, :new_width]  # faz crop da largura
@@ -77,8 +79,7 @@ def get_marked_choice(thresh_question):
     pixel_counts = [cv2.countNonZero(col) for col in cols]
     print(pixel_counts)
     max_value = max(pixel_counts)
-    if max_value < 800:
-        return None
+    if max_value < 800: return None
     return chr(65 + pixel_counts.index(max_value))
 
 respostas = []
@@ -118,12 +119,13 @@ with open(os.path.join(output_json, "respostas.json"), "w") as json_file:
 #    print(f"Questão {numero:02d}: {resposta if resposta else 'Sem marcação'}")
 
 #usado apenas para visualização (opcional)
-# imgBlank = np.zeros_like(img)
-# imageArray = ([img, imgGray, imgBlur, imgCanny],
-#               [imgContours, imgBigContours, imgBlank, imgBlank])
-# imgStacked = utils.stackImages(imageArray, 0.5)
+escala = 0.3  # ou 0.3, 0.25, etc. conforme preferir
 
-# cv2.imshow("Stacked Images", imgStacked)
+#cv2.imshow("Tons de Cinza", cv2.resize(imgGray, (0, 0), fx=escala, fy=escala))
+#cv2.imshow("Borrada", cv2.resize(imgBlur, (0, 0), fx=escala, fy=escala))
+#cv2.imshow("threshould", cv2.resize(imgCanny, (0, 0), fx=escala, fy=escala))
+cv2.imshow("Contorno canny", cv2.resize(imgContours, (0, 0), fx=escala, fy=escala))
+cv2.imshow("Contornos vertices", cv2.resize(imgBigContours, (0, 0), fx=escala, fy=escala))
 
 cv2.waitKey(0)
 cv2.destroyAllWindows()

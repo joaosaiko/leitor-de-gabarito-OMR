@@ -1,3 +1,4 @@
+# Apenas para corverter a imagem para PDF para ser utilizada no OMR
 import aspose.words as aw
 
 doc = aw.Document()
