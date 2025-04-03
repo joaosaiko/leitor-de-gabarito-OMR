@@ -1,131 +1,126 @@
-# OMR_Main.py
+#OMR_MAIN.py
+from fastapi import FastAPI, UploadFile, File
+from fastapi.responses import JSONResponse
 import cv2
 import numpy as np
 import os
 import utils
 from pdf2image import convert_from_path
 import json
+from tempfile import NamedTemporaryFile
 
-# Criar pastas de saída
-output_jpeg = "jpeg"
-os.makedirs("jpeg", exist_ok=True)
+app = FastAPI()
 
-output_json = "json"
-os.makedirs("json", exist_ok=True)
-
-output_cutout = "recortes"
-os.makedirs(output_cutout, exist_ok=True)
-
-# Converter PDF para JPEG
-pdf_path = "9.pdf"  # Substitua pelo nome do seu arquivo PDF
-pages = convert_from_path(pdf_path, dpi=300)  # Converte todas as páginas em imagens
-
-# Salvar a primeira página como JPEG
-jpeg_path = os.path.join(output_jpeg, "pagina_1.jpeg")
-pages[0].save(jpeg_path, "JPEG")
-
-# Atualiza a variável path com o caminho da imagem JPEG gerada
-path = jpeg_path
-
-# Configurações
-widthImg = 3000
-heightImg = 2600
-questions = 60
-choices = 5
-columns = 4
-questions_per_col = questions // columns  # 15 por coluna
-
-# Carregar e redimensionar imagem
-img = cv2.imread(path)
-img = cv2.resize(img, (widthImg, heightImg))
-
-# Pré-processamento
-imgContours = img.copy()
-imgBigContours = img.copy()
-imgGray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-imgBlur = cv2.GaussianBlur(imgGray, (5, 5), 1)
-imgCanny = cv2.Canny(imgBlur, 10, 50)
-
-# Encontrar contornos
-contours, _ = cv2.findContours(imgCanny, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
-cv2.drawContours(imgContours, contours, -1, (0, 255, 0), 2)
-rectCon = utils.rectCountour(contours)
-
-# Processar colunas
-colunas_paths = []
-if len(rectCon) >= 4:
-    gradePoints = [utils.getCornerPoints(rectCon[i]) for i in range(4)]
-    gradePoints = [utils.reorder(pts) for pts in gradePoints]
-    gradePoints.sort(key=lambda pts: np.min(pts[:, 0]))
-
-    for idx, points in enumerate(gradePoints):
-        cv2.drawContours(imgBigContours, points, -1, (0, 255, 0), 20)
-        x, y, w, h = cv2.boundingRect(points) # recorta a coluna
-        imgColuna = img[y:y+h, x:x+w] # recorta a coluna
-        imgWarpGray = cv2.cvtColor(imgColuna, cv2.COLOR_BGR2GRAY)  
-        imgThresh = cv2.threshold(imgWarpGray, 160, 255, cv2.THRESH_BINARY_INV)[1] 
-        save_path = os.path.join(output_cutout, f"coluna_{idx+1}.png")
-        cv2.imwrite(save_path, imgThresh)
-        colunas_paths.append(save_path)
-        print(f"Salvo: {save_path}")
-
-def get_marked_choice(thresh_question):
-    '''Identifica a resposta marcada em uma questão de múltipla escolha.'''
-
-    height, width = thresh_question.shape
-    new_width = width - (width % choices)  # corta o excesso
-    thresh_question = thresh_question[:, :new_width]  # faz crop da largura
-    cols = np.hsplit(thresh_question, choices)
-    pixel_counts = [cv2.countNonZero(col) for col in cols]
-    print(pixel_counts)
-    max_value = max(pixel_counts)
-    if max_value < 800: return None
-    return chr(65 + pixel_counts.index(max_value))
-
-respostas = []
-for idx_coluna, path_coluna in enumerate(colunas_paths):
-    img = cv2.imread(path_coluna, cv2.IMREAD_GRAYSCALE)
-    h, w = img.shape
-    box_height = h // questions_per_col
-    for i in range(questions_per_col):
-        y1 = i * box_height
-        y2 = (i + 1) * box_height
-        questao = img[y1:y2, 0:w]
-        resposta = get_marked_choice(questao)
-        numero_questao = idx_coluna * questions_per_col + i + 1
-        respostas.append((numero_questao, resposta))
-
-# guardar respostas identificadas em um arquivo json na pasta json
-caminho = {}
-resposta_ident, resposta_null = 0, 0
-for num, resposta in respostas:
-    if resposta:
-        resposta_ident += 1
-    else:
-        resposta_null += 1
-    caminho[num] = resposta
-
-# adiciona contagens ao dicionário
-caminho["_resumo"] = {
-    "respostas_identificadas": resposta_ident,
-    "respostas_nulas": resposta_null
+# Mock answer key for 60 questions (A, B, C, D, E repeating)
+answer_key = {
+    1: 'A',  2: 'B',  3: 'C',  4: 'D',  5: 'E',
+    6: 'D',  7: 'C',  8: 'B',  9: 'C', 10: 'D',
+    11: 'E', 12: 'D', 13: 'C', 14: None, 15: None,
+    16: 'A', 17: 'A', 18: 'A', 19: 'A', 20: 'A',
+    21: 'A', 22: 'B', 23: 'B', 24: 'B', 25: 'B',
+    26: 'B', 27: 'B', 28: 'C', 29: 'C', 30: 'C',
+    31: 'A', 32: 'C', 33: 'B', 34: 'C', 35: 'D',
+    36: 'E', 37: 'D', 38: 'C', 39: 'B', 40: 'A',
+    41: 'B', 42: 'D', 43: 'E', 44: 'C', 45: 'B',
+    46: 'C', 47: 'C', 48: 'C', 49: 'E', 50: 'D',
+    51: 'E', 52: 'E', 53: 'E', 54: None, 55: 'D',
+    56: 'D', 57: 'D', 58: 'C', 59: 'A', 60: 'E'
 }
 
-with open(os.path.join(output_json, "respostas.json"), "w") as json_file:
-    json.dump(caminho, json_file, indent=4)
+@app.post("/process-pdf")
+async def process_pdf(file: UploadFile = File(...)):
+    # Output folders
+    os.makedirs("jpeg", exist_ok=True)
+    os.makedirs("json", exist_ok=True)
+    os.makedirs("cutouts", exist_ok=True)
 
-#print("\nRespostas Identificadas:")
-#for numero, resposta in respostas:
-#    print(f"Questão {numero:02d}: {resposta if resposta else 'Sem marcação'}")
+    # Save uploaded PDF
+    with NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
+        tmp.write(await file.read())
+        tmp_path = tmp.name
 
-#usado apenas para visualização (opcional)
-escala = 0.3  # ou 0.3, 0.25, etc. conforme preferir
+    # Convert PDF to image
+    pages = convert_from_path(tmp_path, dpi=300)
+    jpeg_path = os.path.join("jpeg", "page_1.jpeg")
+    pages[0].save(jpeg_path, "JPEG")
 
-#cv2.imshow("Tons de Cinza", cv2.resize(imgGray, (0, 0), fx=escala, fy=escala))
-#cv2.imshow("Borrada", cv2.resize(imgBlur, (0, 0), fx=escala, fy=escala))
-#cv2.imshow("threshould", cv2.resize(imgCanny, (0, 0), fx=escala, fy=escala))
-cv2.imshow("Contorno canny", cv2.resize(imgContours, (0, 0), fx=escala, fy=escala))
-cv2.imshow("Contornos vertices", cv2.resize(imgBigContours, (0, 0), fx=escala, fy=escala))
+    image_path = jpeg_path
+    width, height = 3000, 2600
+    total_questions = 60
+    options = 5
+    cols = 4
+    questions_per_col = total_questions // cols
 
-cv2.waitKey(0)
-cv2.destroyAllWindows()
+    img = cv2.imread(image_path)
+    img = cv2.resize(img, (width, height))
+
+    # Preprocess
+    img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    img_blur = cv2.GaussianBlur(img_gray, (5, 5), 1)
+    img_canny = cv2.Canny(img_blur, 10, 50)
+
+    contours, _ = cv2.findContours(img_canny, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+    rects = utils.findRectContours(contours)
+
+    cutout_paths = []
+    if len(rects) >= 4:
+        points = [utils.getCornerPoints(rects[i]) for i in range(4)]
+        points = [utils.reorder(p) for p in points]
+        points.sort(key=lambda p: np.min(p[:, 0]))
+
+        for idx, pts in enumerate(points):
+            x, y, w, h = cv2.boundingRect(pts)
+            col_img = img[y:y+h, x:x+w]
+            gray = cv2.cvtColor(col_img, cv2.COLOR_BGR2GRAY)
+            thresh = cv2.threshold(gray, 160, 255, cv2.THRESH_BINARY_INV)[1]
+            path = os.path.join("cutouts", f"column_{idx+1}.png")
+            cv2.imwrite(path, thresh)
+            cutout_paths.append(path)
+
+    def detect_marked_choice(thresh_question):
+        height, width = thresh_question.shape
+        new_width = width - (width % options)
+        thresh_question = thresh_question[:, :new_width]
+        columns = np.hsplit(thresh_question, options)
+        pixel_counts = [cv2.countNonZero(col) for col in columns]
+        max_val = max(pixel_counts)
+        if max_val < 800:
+            return None
+        return chr(65 + pixel_counts.index(max_val))
+
+    answers = []
+    for col_idx, path in enumerate(cutout_paths):
+        img = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
+        h, w = img.shape
+        box_height = h // questions_per_col
+        for i in range(questions_per_col):
+            y1 = i * box_height
+            y2 = (i + 1) * box_height
+            question = img[y1:y2, 0:w]
+            choice = detect_marked_choice(question)
+            question_number = col_idx * questions_per_col + i + 1
+            answers.append((question_number, choice))
+
+    detected = {}
+    filled, blank = 0, 0
+    for num, ans in answers:
+        if ans:
+            filled += 1
+        else:
+            blank += 1
+        detected[num] = ans
+
+    detected["_summary"] = {
+        "marked_answers": filled,
+        "blank_answers": blank
+    }
+
+    with open(os.path.join("json", "answers.json"), "w") as f:
+        json.dump(detected, f, indent=4)
+
+    graded_result = utils.grade_answers(detected, answer_key)
+
+    with open(os.path.join("json", "graded_result.json"), "w") as f:
+        json.dump(graded_result, f, indent=4)
+
+    return JSONResponse(content=graded_result)

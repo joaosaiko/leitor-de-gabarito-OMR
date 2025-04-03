@@ -59,8 +59,8 @@
     "58": "C",
     "59": "A",
     "60": "E",
-    "_resumo": {
-        "respostas_identificadas": 57,
-        "respostas_nulas": 3
+    "_summary": {
+        "marked_answers": 57,
+        "blank_answers": 3
     }
 }
