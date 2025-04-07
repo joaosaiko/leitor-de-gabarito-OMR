@@ -83,10 +83,17 @@ async def process_pdf(file: UploadFile = File(...)):
         thresh_question = thresh_question[:, :new_width]
         columns = np.hsplit(thresh_question, options)
         pixel_counts = [cv2.countNonZero(col) for col in columns]
-        max_val = max(pixel_counts)
-        if max_val < 800:
+        print(pixel_counts)
+
+        # Considera apenas colunas com preenchimento acima do limiar
+        threshold = 900
+        marked_indices = [i for i, count in enumerate(pixel_counts) if count > threshold]
+
+        # Se mais de uma alternativa marcada, invalida a resposta
+        if len(marked_indices) != 1:
             return None
-        return chr(65 + pixel_counts.index(max_val))
+
+        return chr(65 + marked_indices[0])
 
     answers = []
     for col_idx, path in enumerate(cutout_paths):

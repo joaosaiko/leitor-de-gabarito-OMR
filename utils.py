@@ -77,6 +77,7 @@ def grade_answers(detected_answers, answer_key):
     result = {}
     correct = 0
     incorrect = 0
+    blank = 0
 
     for number, answer in detected_answers.items():
         if isinstance(number, int):
@@ -87,6 +88,7 @@ def grade_answers(detected_answers, answer_key):
                     "correct_answer": correct_answer,
                     "status": "blank"
                 }
+                blank += 1
             elif answer == correct_answer:
                 result[number] = {
                     "answer": answer,
@@ -102,12 +104,13 @@ def grade_answers(detected_answers, answer_key):
                 }
                 incorrect += 1
 
-    total = correct + incorrect
+    total = correct + incorrect + blank
     percent = round((correct / total) * 100, 2) if total > 0 else 0
 
     result["_summary"] = {
         "correct": correct,
         "incorrect": incorrect,
+        "blank": blank,
         "accuracy_percent": percent
     }
 
