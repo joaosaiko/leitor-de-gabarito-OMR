@@ -1,0 +1,284 @@
+﻿import aspose.words
+import aspose.pydrawing
+import datetime
+import decimal
+import io
+import uuid
+from typing import Iterable, List
+from enum import Enum
+
+class CheckBoxControl(aspose.words.drawing.ole.MorphDataControl):
+    """The CheckBox control toggles a value.
+    
+    It has three possible states: selected, cleared, and neither selected nor cleared,
+    meaning a combination of on and off states."""
+    
+    @property
+    def type(self) -> aspose.words.drawing.ole.Forms2OleControlType:
+        """Gets type of Forms 2.0 control."""
+        ...
+    
+    @property
+    def checked(self) -> bool:
+        """Gets or sets a boolean value indicating either this :class:`CheckBoxControl` is checked or not.
+        The default value is ``False``."""
+        ...
+    
+    @checked.setter
+    def checked(self, value: bool):
+        ...
+    
+    ...
+
+class CommandButtonControl(aspose.words.drawing.ole.Forms2OleControl):
+    """The CommandButton control runs a macro that performs an action when a user clicks it."""
+    
+    def __init__(self):
+        """Initializes a new instance of :class:`CommandButtonControl` class."""
+        ...
+    
+    @property
+    def type(self) -> aspose.words.drawing.ole.Forms2OleControlType:
+        """Gets type of Forms 2.0 control."""
+        ...
+    
+    ...
+
+class Forms2OleControl(aspose.words.drawing.ole.OleControl):
+    """Represents Microsoft Forms 2.0 OLE control.
+    To learn more, visit the `Working with Ole Objects <https://docs.aspose.com/words/python-net/working-with-ole-objects/>` documentation article."""
+    
+    def as_text_box_control(self) -> aspose.words.drawing.ole.TextBoxControl:
+        """Casts Forms2OleControl to :class:`TextBoxControl`, otherwise returns null."""
+        ...
+    
+    @property
+    def caption(self) -> str:
+        """Gets or sets a Caption property of the control.
+        Default value is an empty string."""
+        ...
+    
+    @caption.setter
+    def caption(self, value: str):
+        ...
+    
+    @property
+    def value(self) -> str:
+        """Gets underlying Value property which often represents control state.
+        For example checked option button has '1' value while unchecked has '0'.
+        Default value is an empty string."""
+        ...
+    
+    @property
+    def enabled(self) -> bool:
+        """Returns ``True`` if control is in enabled state."""
+        ...
+    
+    @property
+    def child_nodes(self) -> aspose.words.drawing.ole.Forms2OleControlCollection:
+        """Gets collection of immediate child controls.
+        
+        Returns ``None`` if this control can not have children."""
+        ...
+    
+    @property
+    def type(self) -> aspose.words.drawing.ole.Forms2OleControlType:
+        """Gets type of Forms 2.0 control."""
+        ...
+    
+    @property
+    def group_name(self) -> str:
+        """Gets or sets a string that specifies a group of mutually exclusive controls.
+        The default value is an empty string."""
+        ...
+    
+    @group_name.setter
+    def group_name(self, value: str):
+        ...
+    
+    @property
+    def fore_color(self) -> aspose.pydrawing.Color:
+        """Gets or sets a foreground color of the control.
+        The default value depends on a type of the control."""
+        ...
+    
+    @fore_color.setter
+    def fore_color(self, value: aspose.pydrawing.Color):
+        ...
+    
+    @property
+    def back_color(self) -> aspose.pydrawing.Color:
+        """Gets or sets a background color of the control.
+        The default value depends on a type of the control."""
+        ...
+    
+    @back_color.setter
+    def back_color(self, value: aspose.pydrawing.Color):
+        ...
+    
+    @property
+    def width(self) -> float:
+        """Gets or sets a width of the control in points."""
+        ...
+    
+    @width.setter
+    def width(self, value: float):
+        ...
+    
+    @property
+    def height(self) -> float:
+        """Gets or sets a height of the control in points."""
+        ...
+    
+    @height.setter
+    def height(self, value: float):
+        ...
+    
+    ...
+
+class Forms2OleControlCollection:
+    """Represents collection of :class:`Forms2OleControl` objects.
+    To learn more, visit the `Working with Ole Objects <https://docs.aspose.com/words/python-net/working-with-ole-objects/>` documentation article."""
+    
+    def __init__(self):
+        ...
+    
+    def __getitem__(self, index: int) -> aspose.words.drawing.ole.Forms2OleControl:
+        """Gets :class:`Forms2OleControl` object at a specified index."""
+        ...
+    
+    @property
+    def count(self) -> int:
+        """Gets count of objects in the collection."""
+        ...
+    
+    ...
+
+class MorphDataControl(aspose.words.drawing.ole.Forms2OleControl):
+    """The MorphDataControl structure is an aggregate of six controls: CheckBox, ComboBox, ListBox, OptionButton, TextBox, and ToggleButton."""
+    
+    ...
+
+class OleControl:
+    """Represents OLE ActiveX control.
+    To learn more, visit the `Working with Ole Objects <https://docs.aspose.com/words/python-net/working-with-ole-objects/>` documentation article."""
+    
+    def as_forms2_ole_control(self) -> aspose.words.drawing.ole.Forms2OleControl:
+        ...
+    
+    def as_option_button_control(self) -> aspose.words.drawing.ole.OptionButtonControl:
+        ...
+    
+    def as_check_box_control(self) -> aspose.words.drawing.ole.CheckBoxControl:
+        ...
+    
+    def as_text_box_control(self) -> aspose.words.drawing.ole.TextBoxControl:
+        ...
+    
+    @property
+    def name(self) -> str:
+        """Gets or sets name of the ActiveX control."""
+        ...
+    
+    @name.setter
+    def name(self, value: str):
+        ...
+    
+    @property
+    def is_forms2_ole_control(self) -> bool:
+        """Returns ``True`` if the control is a :class:`Forms2OleControl`."""
+        ...
+    
+    ...
+
+class OptionButtonControl(aspose.words.drawing.ole.MorphDataControl):
+    """The OptionButton control enables a single choice in a limited set of mutually exclusive choices."""
+    
+    @property
+    def type(self) -> aspose.words.drawing.ole.Forms2OleControlType:
+        """Gets type of Forms 2.0 control."""
+        ...
+    
+    @property
+    def selected(self) -> bool:
+        """Gets or sets a boolean value indicating either this :class:`OptionButtonControl` is selected or not.
+        
+        Note, this property allows you to select multiple items in a group of :class:`OptionButtonControl`
+        with the same :attr:`Forms2OleControl.group_name`. It is up to you to take care of deselecting a previously
+        selected item when you make this :class:`OptionButtonControl` selected."""
+        ...
+    
+    @selected.setter
+    def selected(self, value: bool):
+        ...
+    
+    ...
+
+class TextBoxControl(aspose.words.drawing.ole.MorphDataControl):
+    """The TextBox control displays text from an organized set of data or user input."""
+    
+    @property
+    def type(self) -> aspose.words.drawing.ole.Forms2OleControlType:
+        """Gets type of Forms 2.0 control."""
+        ...
+    
+    @property
+    def text(self) -> str:
+        """Gets or sets a text of the control."""
+        ...
+    
+    @text.setter
+    def text(self, value: str):
+        ...
+    
+    ...
+
+class Forms2OleControlType(Enum):
+    """Enumerates types of Forms 2.0 controls."""
+    
+    """A radio button control."""
+    OPTION_BUTTON: int
+    
+    """A control that displays text."""
+    LABEL: int
+    
+    """A control that allows the user to enter text."""
+    TEXTBOX: int
+    
+    """A control that allows the user to select or deselect an option."""
+    CHECK_BOX: int
+    
+    """A control that allows the user to toggle between two states."""
+    TOGGLE_BUTTON: int
+    
+    """A control that allows the user to increase or decrease a value."""
+    SPIN_BUTTON: int
+    
+    """A control that allows the user to select an item from a list."""
+    COMBO_BOX: int
+    
+    """A control that groups other controls."""
+    FRAME: int
+    
+    """A control that displays multiple pages of content."""
+    MULTI_PAGE: int
+    
+    """A control that allows the user to switch between multiple pages of content."""
+    TAB_STRIP: int
+    
+    """A button that triggers an action when clicked."""
+    COMMAND_BUTTON: int
+    
+    """A control that displays an image."""
+    IMAGE: int
+    
+    """A control that allows the user to scroll through content."""
+    SCROLL_BAR: int
+    
+    """A container for other controls."""
+    FORM: int
+    
+    """A control that displays a list of items."""
+    LIST_BOX: int
+    
+

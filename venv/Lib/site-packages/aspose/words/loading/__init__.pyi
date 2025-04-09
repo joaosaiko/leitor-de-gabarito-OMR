@@ -1,0 +1,1467 @@
+﻿import aspose.words
+import aspose.pydrawing
+import datetime
+import decimal
+import io
+import uuid
+from typing import Iterable, List
+from enum import Enum
+
+class ChmLoadOptions(aspose.words.loading.LoadOptions):
+    """Allows to specify additional options when loading CHM document into a :class:`aspose.words.Document` object.
+    To learn more, visit the `Specify Load Options <https://docs.aspose.com/words/python-net/specify-load-options/>` documentation article."""
+    
+    def __init__(self):
+        """Initializes a new instance of this class with default values."""
+        ...
+    
+    @property
+    def original_file_name(self) -> str:
+        """The name of the CHM file.
+        Default value is ``None``.
+        
+        CHM documents may contain links that reference the same document by file name. Aspose.Words supports such links
+        and normally uses :attr:`aspose.words.Document.original_file_name` to check whether the file referenced by a link
+        is the file that is being loaded. If a document is loaded from a stream, its original file name should be specified
+        explicitly via this property, since it cannot be determined automatically.
+        
+        If a CHM document is loaded from a file and a non-null value for this property is specified, the value will take
+        priority over the actual name of the file stored in :attr:`aspose.words.Document.original_file_name`."""
+        ...
+    
+    @original_file_name.setter
+    def original_file_name(self, value: str):
+        ...
+    
+    ...
+
+class DocumentLoadingArgs:
+    """An argument passed into :meth:`IDocumentLoadingCallback.notify`.
+    To learn more, visit the `Specify Load Options <https://docs.aspose.com/words/python-net/specify-load-options/>` documentation article."""
+    
+    @property
+    def estimated_progress(self) -> float:
+        """Overall estimated percentage progress."""
+        ...
+    
+    ...
+
+class HtmlLoadOptions(aspose.words.loading.LoadOptions):
+    """Allows to specify additional options when loading HTML document into a :class:`aspose.words.Document` object.
+    To learn more, visit the `Specify Load Options <https://docs.aspose.com/words/python-net/specify-load-options/>` documentation article."""
+    
+    @overload
+    def __init__(self):
+        """Initializes a new instance of this class with default values."""
+        ...
+    
+    @overload
+    def __init__(self, password: str):
+        """A shortcut to initialize a new instance of this class with the specified password to load an encrypted document.
+        
+        :param password: The password to open an encrypted document. Can be ``None`` or empty string."""
+        ...
+    
+    @overload
+    def __init__(self, load_format: aspose.words.LoadFormat, password: str, base_uri: str):
+        """A shortcut to initialize a new instance of this class with properties set to the specified values.
+        
+        :param load_format: The format of the document to be loaded.
+        :param password: The password to open an encrypted document. Can be ``None`` or empty string.
+        :param base_uri: The string that will be used to resolve relative URIs to absolute. Can be ``None`` or empty string."""
+        ...
+    
+    @property
+    def support_vml(self) -> bool:
+        """Gets or sets a value indicating whether to support VML images."""
+        ...
+    
+    @support_vml.setter
+    def support_vml(self, value: bool):
+        ...
+    
+    @property
+    def web_request_timeout(self) -> int:
+        """The number of milliseconds to wait before the web request times out. The default value is 100000 milliseconds
+        (100 seconds).
+        
+        The number of milliseconds that Aspose.Words waits for a response, when loading external resources (images, style
+        sheets) linked in HTML and MHTML documents."""
+        ...
+    
+    @web_request_timeout.setter
+    def web_request_timeout(self, value: int):
+        ...
+    
+    @property
+    def preferred_control_type(self) -> aspose.words.loading.HtmlControlType:
+        """Gets or sets preferred type of document nodes that will represent imported \<input\> and \<select\> elements.
+        Default value is :attr:`HtmlControlType.FORM_FIELD`.
+        
+        Please note that setting this property does not guarantee that all imported controls will be of the specified type.
+        If an HTML control is not representable with document nodes of the preferred type, Aspose.Words will use
+        a compatible :class:`HtmlControlType` for that control."""
+        ...
+    
+    @preferred_control_type.setter
+    def preferred_control_type(self, value: aspose.words.loading.HtmlControlType):
+        ...
+    
+    @property
+    def ignore_noscript_elements(self) -> bool:
+        """Gets or sets a value indicating whether to ignore \<noscript\> HTML elements.
+        Default value is ``False``.
+        
+        Like MS Word, Aspose.Words does not support scripts and by default loads content of \<noscript\> elements
+        into the resulting document. In most browsers, however, scripts are supported and content from \<noscript\>
+        is not visible. Setting this property to ``True`` forces Aspose.Words to ignore all \<noscript\> elements
+        and helps to produce documents that look closer to what is seen in browsers."""
+        ...
+    
+    @ignore_noscript_elements.setter
+    def ignore_noscript_elements(self, value: bool):
+        ...
+    
+    @property
+    def convert_svg_to_emf(self) -> bool:
+        """Gets or sets a value indicating whether to convert loaded SVG images to the EMF format.
+        Default value is ``False`` and, if possible, loaded SVG images are stored as is without conversion.
+        
+        Newer versions of MS Word support SVG images natively. If the MS Word version specified in load options supports
+        SVG, Aspose.Words will store SVG images as is without conversion. If SVG is not supported, loaded SVG images will be
+        converted to the EMF format.
+        
+        If, however, this option is set to ``True``, Aspose.Words will convert loaded SVG images to EMF even if SVG
+        images are supported by the specified version of MS Word."""
+        ...
+    
+    @convert_svg_to_emf.setter
+    def convert_svg_to_emf(self, value: bool):
+        ...
+    
+    @property
+    def block_import_mode(self) -> aspose.words.loading.BlockImportMode:
+        """Gets or sets a value that specifies how properties of block-level elements are imported.
+        Default value is :attr:`BlockImportMode.MERGE`."""
+        ...
+    
+    @block_import_mode.setter
+    def block_import_mode(self, value: aspose.words.loading.BlockImportMode):
+        ...
+    
+    @property
+    def support_font_face_rules(self) -> bool:
+        """Gets or sets a value indicating whether to support @font-face rules and whether to load declared fonts.
+        Default value is ``False``.
+        
+        If this option is enabled, fonts declared in @font-face rules are loaded and embedded into the resulting document's
+        font definitions (see :attr:`aspose.words.DocumentBase.font_infos`). This makes the loaded fonts available for rendering but
+        doesn't automatically enable embedding of the fonts upon saving. In order to save the document with loaded fonts,
+        the :attr:`aspose.words.fonts.FontInfoCollection.embed_true_type_fonts` property of the :attr:`aspose.words.DocumentBase.font_infos`
+        collection should be set to ``True``.
+        
+        Supported font formats are TTF, EOT, and WOFF.
+        
+        @font-face rules are not supported when loading SVG images."""
+        ...
+    
+    @support_font_face_rules.setter
+    def support_font_face_rules(self, value: bool):
+        ...
+    
+    ...
+
+class IDocumentLoadingCallback:
+    """Implement this interface if you want to have your own custom method called during loading a document."""
+    
+    def notify(self, args: aspose.words.loading.DocumentLoadingArgs) -> None:
+        """This is called to notify of document loading progress.
+        
+        :param args: An argument of the event.
+        
+        The primary uses for this interface is to allow application code to obtain progress status and abort loading process.
+        
+        An exception should be threw from the progress callback for abortion and it should be caught in the consumer code."""
+        ...
+    
+    ...
+
+class IResourceLoadingCallback:
+    """Implement this interface if you want to control how Aspose.Words loads external resource when
+    importing a document and inserting images using :class:`aspose.words.DocumentBuilder`."""
+    
+    def resource_loading(self, args: aspose.words.loading.ResourceLoadingArgs) -> aspose.words.loading.ResourceLoadingAction:
+        """Called when Aspose.Words loads any external resource."""
+        ...
+    
+    ...
+
+class LanguagePreferences:
+    """Allows to set up language preferences.
+    To learn more, visit the `Specify Load Options <https://docs.aspose.com/words/python-net/specify-load-options/>` documentation article.
+    
+    Implements 'Set the Office Language Preferences' dialog in Word."""
+    
+    def __init__(self):
+        ...
+    
+    def add_editing_language(self, language: aspose.words.loading.EditingLanguage) -> None:
+        """Adds additional editing language."""
+        ...
+    
+    def add_editing_languages(self, languages: List[aspose.words.loading.EditingLanguage]) -> None:
+        """Adds additional editing languages."""
+        ...
+    
+    @property
+    def default_editing_language(self) -> aspose.words.loading.EditingLanguage:
+        """Gets or sets default editing language.
+        
+        The default value is EnglishUS."""
+        ...
+    
+    @default_editing_language.setter
+    def default_editing_language(self, value: aspose.words.loading.EditingLanguage):
+        ...
+    
+    ...
+
+class LoadOptions:
+    """Allows to specify additional options (such as password or base URI) when
+    loading a document into a :class:`aspose.words.Document` object.
+    To learn more, visit the `Specify Load Options <https://docs.aspose.com/words/python-net/specify-load-options/>` documentation article."""
+    
+    @overload
+    def __init__(self):
+        """Initializes a new instance of this class with default values."""
+        ...
+    
+    @overload
+    def __init__(self, password: str):
+        """A shortcut to initialize a new instance of this class with the specified password to load an encrypted document.
+        
+        :param password: The password to open an encrypted document. Can be ``None`` or empty string."""
+        ...
+    
+    @overload
+    def __init__(self, load_format: aspose.words.LoadFormat, password: str, base_uri: str):
+        """A shortcut to initialize a new instance of this class with properties set to the specified values.
+        
+        :param load_format: The format of the document to be loaded.
+        :param password: The password to open an encrypted document. Can be ``None`` or empty string.
+        :param base_uri: The string that will be used to resolve relative URIs to absolute. Can be ``None`` or empty string."""
+        ...
+    
+    @property
+    def load_format(self) -> aspose.words.LoadFormat:
+        """Specifies the format of the document to be loaded.
+        Default is :attr:`aspose.words.LoadFormat.AUTO`.
+        
+        It is recommended that you specify the :attr:`aspose.words.LoadFormat.AUTO` value and let Aspose.Words detect
+        the file format automatically. If you know the format of the document you are about to load, you can specify the format
+        explicitly and this will slightly reduce the loading time by the overhead associated with auto detecting the format.
+        If you specify an explicit load format and it will turn out to be wrong, the auto detection will be invoked and a second
+        attempt to load the file will be made."""
+        ...
+    
+    @load_format.setter
+    def load_format(self, value: aspose.words.LoadFormat):
+        ...
+    
+    @property
+    def password(self) -> str:
+        """Gets or sets the password for opening an encrypted document.
+        Can be ``None`` or empty string. Default is ``None``.
+        
+        You need to know the password to open an encrypted document. If the document is not encrypted, set this to ``None`` or empty string."""
+        ...
+    
+    @password.setter
+    def password(self, value: str):
+        ...
+    
+    @property
+    def base_uri(self) -> str:
+        """Gets or sets the string that will be used to resolve relative URIs found in the document into absolute URIs when required.
+        Can be ``None`` or empty string. Default is ``None``.
+        
+        This property is used to resolve relative URIs into absolute in the following cases:
+        
+        1. When loading an HTML document from a stream and the document contains images with
+           relative URIs and does not have a base URI specified in the BASE HTML element.
+        
+        1. When saving a document to PDF and other formats, to retrieve images linked using relative URIs
+           so the images can be saved into the output document."""
+        ...
+    
+    @base_uri.setter
+    def base_uri(self, value: str):
+        ...
+    
+    @property
+    def encoding(self) -> str:
+        """Gets or sets the encoding that will be used to load an HTML, TXT, or CHM document if the encoding is not specified
+        inside the document.
+        Can be ``None``. Default is ``None``.
+        
+        This property is used only when loading HTML, TXT, or CHM documents.
+        
+        If encoding is not specified inside the document and this property is ``None``, then the system will try to
+        automatically detect the encoding."""
+        ...
+    
+    @encoding.setter
+    def encoding(self, value: str):
+        ...
+    
+    @property
+    def resource_loading_callback(self) -> aspose.words.loading.IResourceLoadingCallback:
+        """Allows to control how external resources (images, style sheets) are loaded when a document is imported from HTML, MHTML."""
+        ...
+    
+    @resource_loading_callback.setter
+    def resource_loading_callback(self, value: aspose.words.loading.IResourceLoadingCallback):
+        ...
+    
+    @property
+    def warning_callback(self) -> aspose.words.IWarningCallback:
+        """Called during a load operation, when an issue is detected that might result in data or formatting fidelity loss."""
+        ...
+    
+    @warning_callback.setter
+    def warning_callback(self, value: aspose.words.IWarningCallback):
+        ...
+    
+    @property
+    def progress_callback(self) -> aspose.words.loading.IDocumentLoadingCallback:
+        """Called during loading a document and accepts data about loading progress.
+        
+        :attr:`aspose.words.LoadFormat.DOCX`, :attr:`aspose.words.LoadFormat.FLAT_OPC`, :attr:`aspose.words.LoadFormat.DOCM`, :attr:`aspose.words.LoadFormat.DOTM`, :attr:`aspose.words.LoadFormat.DOTX`, :attr:`aspose.words.LoadFormat.MARKDOWN`, :attr:`aspose.words.LoadFormat.RTF`, :attr:`aspose.words.LoadFormat.WORD_ML`, :attr:`aspose.words.LoadFormat.DOC`, :attr:`aspose.words.LoadFormat.DOT`, :attr:`aspose.words.LoadFormat.ODT`, :attr:`aspose.words.LoadFormat.OTT` formats supported."""
+        ...
+    
+    @progress_callback.setter
+    def progress_callback(self, value: aspose.words.loading.IDocumentLoadingCallback):
+        ...
+    
+    @property
+    def preserve_include_picture_field(self) -> bool:
+        """Gets or sets whether to preserve the INCLUDEPICTURE field when reading Microsoft Word formats.
+        The default value is ``False``.
+        
+        By default, the INCLUDEPICTURE field is converted into a shape object. You can override that if you need
+        the field to be preserved, for example, if you wish to update it programmatically. Note however that this
+        approach is not common for Aspose.Words. Use it on your own risk.
+        
+        One of the possible use cases may be using a MERGEFIELD as a child field to dynamically change the source path
+        of the picture. In this case you need the INCLUDEPICTURE to be preserved in the model."""
+        ...
+    
+    @preserve_include_picture_field.setter
+    def preserve_include_picture_field(self, value: bool):
+        ...
+    
+    @property
+    def convert_shape_to_office_math(self) -> bool:
+        """Gets or sets whether to convert shapes with EquationXML to Office Math objects."""
+        ...
+    
+    @convert_shape_to_office_math.setter
+    def convert_shape_to_office_math(self, value: bool):
+        ...
+    
+    @property
+    def font_settings(self) -> aspose.words.fonts.FontSettings:
+        """Allows to specify document font settings.
+        
+        When loading some formats, Aspose.Words may require to resolve the fonts. For example, when loading HTML documents Aspose.Words
+        may resolve the fonts to perform font fallback.
+        
+        If set to ``None``, default static font settings :attr:`aspose.words.fonts.FontSettings.default_instance` will be used.
+        
+        The default value is ``None``."""
+        ...
+    
+    @font_settings.setter
+    def font_settings(self, value: aspose.words.fonts.FontSettings):
+        ...
+    
+    @property
+    def temp_folder(self) -> str:
+        """Allows to use temporary files when reading document.
+        By default this property is ``None`` and no temporary files are used.
+        
+        The folder must exist and be writable, otherwise an exception will be thrown.
+        
+        Aspose.Words automatically deletes all temporary files when reading is complete."""
+        ...
+    
+    @temp_folder.setter
+    def temp_folder(self, value: str):
+        ...
+    
+    @property
+    def convert_metafiles_to_png(self) -> bool:
+        """Gets or sets whether to convert metafile(Wmf or Emf)
+        images to Png image format.
+        
+        Metafiles (Wmf or Emf)
+        is an uncompressed image format and sometimes requires to much RAM to hold and process document.
+        This option allows to convert all metafile images to Png on document loading.
+        Please note - conversion vector graphics to raster decreases quality of the images."""
+        ...
+    
+    @convert_metafiles_to_png.setter
+    def convert_metafiles_to_png(self, value: bool):
+        ...
+    
+    @property
+    def msw_version(self) -> aspose.words.settings.MsWordVersion:
+        """Allows to specify that the document loading process should match a specific MS Word version.
+        Default value is :attr:`aspose.words.settings.MsWordVersion.WORD2019`
+        
+        Different Word versions may handle certain aspects of document content and formatting slightly differently
+        during the loading process, which may result in minor differences in Document Object Model."""
+        ...
+    
+    @msw_version.setter
+    def msw_version(self, value: aspose.words.settings.MsWordVersion):
+        ...
+    
+    @property
+    def update_dirty_fields(self) -> bool:
+        """Specifies whether to update the fields with the ``dirty`` attribute."""
+        ...
+    
+    @update_dirty_fields.setter
+    def update_dirty_fields(self, value: bool):
+        ...
+    
+    @property
+    def ignore_ole_data(self) -> bool:
+        """Specifies whether to ignore the OLE data.
+        
+        Ignoring OLE data may reduce memory consumption and increase performance without data lost in a case when destination format does not support OLE objects.
+        
+        The default value is ``False``."""
+        ...
+    
+    @ignore_ole_data.setter
+    def ignore_ole_data(self, value: bool):
+        ...
+    
+    @property
+    def use_system_lcid(self) -> bool:
+        """Gets or sets whether to use LCID value obtained from Windows registry to determine page setup default margins.
+        
+        If set to ``True``, then MS Word behavior is emulated which takes LCID value from Windows registry.
+        
+        The default value is ``False``."""
+        ...
+    
+    @use_system_lcid.setter
+    def use_system_lcid(self, value: bool):
+        ...
+    
+    @property
+    def language_preferences(self) -> aspose.words.loading.LanguagePreferences:
+        """Gets language preferences that will be used when document is loading."""
+        ...
+    
+    ...
+
+class MarkdownLoadOptions(aspose.words.loading.LoadOptions):
+    """Allows to specify additional options when loading :attr:`aspose.words.LoadFormat.MARKDOWN` document into a :class:`aspose.words.Document` object."""
+    
+    def __init__(self):
+        """Initializes a new instance of :class:`MarkdownLoadOptions` class.
+        
+        Automatically sets :class:`aspose.words.LoadFormat` to :attr:`aspose.words.LoadFormat.MARKDOWN`."""
+        ...
+    
+    @property
+    def preserve_empty_lines(self) -> bool:
+        """Gets or sets a boolean value indicating whether to preserve empty lines while load a :attr:`aspose.words.LoadFormat.MARKDOWN` document.
+        The default value is ``False``.
+        Normally, empty lines between block-level elements in Markdown are ignored. Empty lines at the beginning and
+        end of the document are also ignored. This option allows to import such empty lines."""
+        ...
+    
+    @preserve_empty_lines.setter
+    def preserve_empty_lines(self, value: bool):
+        ...
+    
+    @property
+    def import_underline_formatting(self) -> bool:
+        """Gets or sets a boolean value indicating either to recognize a sequence
+        of two plus characters "++" as underline text formatting.
+        The default value is ``False``."""
+        ...
+    
+    @import_underline_formatting.setter
+    def import_underline_formatting(self, value: bool):
+        ...
+    
+    ...
+
+class PdfLoadOptions(aspose.words.loading.LoadOptions):
+    """Allows to specify additional options when loading Pdf document into a :class:`aspose.words.Document` object.
+    To learn more, visit the `Specify Load Options <https://docs.aspose.com/words/python-net/specify-load-options/>` documentation article."""
+    
+    def __init__(self):
+        ...
+    
+    @property
+    def page_index(self) -> int:
+        """Gets or sets the 0-based index of the first page to read. Default is 0."""
+        ...
+    
+    @page_index.setter
+    def page_index(self, value: int):
+        ...
+    
+    @property
+    def page_count(self) -> int:
+        """Gets or sets the number of pages to read. Default is MaxValue which means all pages of the document will be read."""
+        ...
+    
+    @page_count.setter
+    def page_count(self, value: int):
+        ...
+    
+    @property
+    def skip_pdf_images(self) -> bool:
+        """Gets or sets the flag indicating whether images must be skipped while loading PDF document. Default is ``False``."""
+        ...
+    
+    @skip_pdf_images.setter
+    def skip_pdf_images(self, value: bool):
+        ...
+    
+    ...
+
+class ResourceLoadingArgs:
+    """Provides data for the :meth:`IResourceLoadingCallback.resource_loading` method."""
+    
+    def set_data(self, data: bytes) -> None:
+        """Sets user provided data of the resource which is used
+        if :meth:`IResourceLoadingCallback.resource_loading`
+        returns :attr:`ResourceLoadingAction.USER_PROVIDED`."""
+        ...
+    
+    @property
+    def resource_type(self) -> aspose.words.loading.ResourceType:
+        """Type of resource."""
+        ...
+    
+    @property
+    def uri(self) -> str:
+        """URI of the resource which is used for downloading
+        if :meth:`IResourceLoadingCallback.resource_loading`
+        returns :attr:`ResourceLoadingAction.DEFAULT`.
+        
+        Initially it's set to absolute URI of the resource,
+        but user can redefine it to any value."""
+        ...
+    
+    @uri.setter
+    def uri(self, value: str):
+        ...
+    
+    @property
+    def original_uri(self) -> str:
+        """Original URI of the resource as specified in imported document."""
+        ...
+    
+    ...
+
+class RtfLoadOptions(aspose.words.loading.LoadOptions):
+    """Allows to specify additional options when loading :attr:`aspose.words.LoadFormat.RTF` document into a :class:`aspose.words.Document` object.
+    To learn more, visit the `Specify Load Options <https://docs.aspose.com/words/python-net/specify-load-options/>` documentation article."""
+    
+    def __init__(self):
+        """Initializes a new instance of this class with default values."""
+        ...
+    
+    @property
+    def recognize_utf8_text(self) -> bool:
+        """When set to ``True``,  will try to detect UTF8 characters,
+        they will be preserved during import.
+        
+        Default value is ``False``."""
+        ...
+    
+    @recognize_utf8_text.setter
+    def recognize_utf8_text(self, value: bool):
+        ...
+    
+    ...
+
+class TxtLoadOptions(aspose.words.loading.LoadOptions):
+    """Allows to specify additional options when loading :attr:`aspose.words.LoadFormat.TEXT` document into a :class:`aspose.words.Document` object.
+    To learn more, visit the `Specify Load Options <https://docs.aspose.com/words/python-net/specify-load-options/>` documentation article."""
+    
+    def __init__(self):
+        """Initializes a new instance of this class with default values."""
+        ...
+    
+    @property
+    def auto_numbering_detection(self) -> bool:
+        """Gets or sets a boolean value indicating either automatic numbering detection
+        will be performed while loading a document.
+        The default value is ``True``."""
+        ...
+    
+    @auto_numbering_detection.setter
+    def auto_numbering_detection(self, value: bool):
+        ...
+    
+    @property
+    def detect_numbering_with_whitespaces(self) -> bool:
+        """Allows to specify how numbered list items are recognized when document is imported from plain text format.
+        The default value is ``True``.
+        
+        If this option is set to ``False``, lists recognition algorithm detects list paragraphs, when list numbers ends with
+        either dot, right bracket or bullet symbols (such as "•", "\*", "-" or "o").
+        
+        If this option is set to ``True``, whitespaces are also used as list number delimiters:
+        list recognition algorithm for Arabic style numbering (1., 1.1.2.) uses both whitespaces and dot (".") symbols."""
+        ...
+    
+    @detect_numbering_with_whitespaces.setter
+    def detect_numbering_with_whitespaces(self, value: bool):
+        ...
+    
+    @property
+    def trailing_spaces_options(self) -> aspose.words.loading.TxtTrailingSpacesOptions:
+        """Gets or sets preferred option of a trailing space handling.
+        Default value is :attr:`TxtTrailingSpacesOptions.TRIM`."""
+        ...
+    
+    @trailing_spaces_options.setter
+    def trailing_spaces_options(self, value: aspose.words.loading.TxtTrailingSpacesOptions):
+        ...
+    
+    @property
+    def leading_spaces_options(self) -> aspose.words.loading.TxtLeadingSpacesOptions:
+        """Gets or sets preferred option of a leading space handling.
+        Default value is :attr:`TxtLeadingSpacesOptions.CONVERT_TO_INDENT`."""
+        ...
+    
+    @leading_spaces_options.setter
+    def leading_spaces_options(self, value: aspose.words.loading.TxtLeadingSpacesOptions):
+        ...
+    
+    @property
+    def document_direction(self) -> aspose.words.loading.DocumentDirection:
+        """Gets or sets a document direction.
+        The default value is :attr:`DocumentDirection.LEFT_TO_RIGHT`."""
+        ...
+    
+    @document_direction.setter
+    def document_direction(self, value: aspose.words.loading.DocumentDirection):
+        ...
+    
+    @property
+    def detect_hyperlinks(self) -> bool:
+        """Specifies either to detect hyperlinks in text.
+        The default value is ``False``."""
+        ...
+    
+    @detect_hyperlinks.setter
+    def detect_hyperlinks(self, value: bool):
+        ...
+    
+    ...
+
+class BlockImportMode(Enum):
+    """Specifies how properties of block-level elements are imported from HTML-based documents."""
+    
+    """Properties of parent blocks are merged and stored on child elements (i.e. paragraphs or tables).
+    
+    Properties of parent blocks are merged as follows: margins are added together; borders of higher-level blocks
+    are discarded and only the most inner-level borders are preserved. As a result, when this mode is specified,
+    some formatting of blocks from the original document will be lost.
+    
+    On the other hand, since all merged block-level properties are stored on document nodes, all formating
+    in the resulting document will be available for modification."""
+    MERGE: int
+    
+    """Properties of parent blocks are imported to a special logical structure and are stored separately from
+    document nodes.
+    
+    Only margins and borders of 'body', 'div', and 'blockquote' HTML elements are imported. Properties of each HTML
+    element are stored individually.
+    
+    This mode allows to better preserve borders and margins seen in the HTML document and get better conversion
+    results. The downside is that the resulting document gets harder to modify, since borders and margins stored
+    in the logical structure are not available for editing.
+    
+    This mode mimics MS Word's behavior regarding import of block properties."""
+    PRESERVE: int
+    
+
+class DocumentDirection(Enum):
+    """Allows to specify the direction to flow the text in a document."""
+    
+    """Left to right direction."""
+    LEFT_TO_RIGHT: int
+    
+    """Right to left direction."""
+    RIGHT_TO_LEFT: int
+    
+    """Auto-detect direction.
+    
+    When this option is selected and text contains characters belonging to RTL scripts,
+    the document direction will be set automatically to RTL."""
+    AUTO: int
+    
+
+class EditingLanguage(Enum):
+    """Specifies the editing language."""
+    
+    """Language: Afrikaans"""
+    AFRIKAANS: int
+    
+    """Language: Albanian"""
+    ALBANIAN: int
+    
+    """Language: Alsatian"""
+    ALSATIAN: int
+    
+    """Language: Amharic"""
+    AMHARIC: int
+    
+    """Language: Arabic (Algeria)"""
+    ARABIC_ALGERIA: int
+    
+    """Language: Arabic (Bahrain)"""
+    ARABIC_BAHRAIN: int
+    
+    """Language: Arabic (Egypt)"""
+    ARABIC_EGYPT: int
+    
+    """Language: Arabic (Iraq)"""
+    ARABIC_IRAQ: int
+    
+    """Language: Arabic (Jordan)"""
+    ARABIC_JORDAN: int
+    
+    """Language: Arabic (Kuwait)"""
+    ARABIC_KUWAIT: int
+    
+    """Language: Arabic (Lebanon)"""
+    ARABIC_LEBANON: int
+    
+    """Language: Arabic (Libya)"""
+    ARABIC_LIBYA: int
+    
+    """Language: Arabic (Morocco)"""
+    ARABIC_MOROCCO: int
+    
+    """Language: Arabic (Oman)"""
+    ARABIC_OMAN: int
+    
+    """Language: Arabic (Qatar)"""
+    ARABIC_QATAR: int
+    
+    """Language: Arabic (Saudi Arabia)"""
+    ARABIC_SAUDI_ARABIA: int
+    
+    """Language: Arabic (Syria)"""
+    ARABIC_SYRIA: int
+    
+    """Language: Arabic (Tunisia)"""
+    ARABIC_TUNISIA: int
+    
+    """Language: Arabic (United Arab Emirates)"""
+    ARABIC_UAE: int
+    
+    """Language: Arabic (Yemen)"""
+    ARABIC_YEMEN: int
+    
+    """Language: Armenian"""
+    ARMENIAN: int
+    
+    """Language: Assamese"""
+    ASSAMESE: int
+    
+    """Language: Azerbaijani (Cyrillic)"""
+    AZERBAIJANI_CYRILLIC: int
+    
+    """Language: Azerbaijani (Latin)"""
+    AZERBAIJANI_LATIN: int
+    
+    """Language: Bangla (Bangladesh)"""
+    BANGLA_BANGLADESH: int
+    
+    """Language: Bangla (India)"""
+    BANGLA_INDIA: int
+    
+    """Language: Bashkir"""
+    BASHKIR: int
+    
+    """Language: Basque"""
+    BASQUE: int
+    
+    """Language: Belarusian"""
+    BELARUSIAN: int
+    
+    """Language: Bosnian (Cyrillic)"""
+    BOSNIAN_CYRILLIC: int
+    
+    """Language: Bosnian (Latin)"""
+    BOSNIAN_LATIN: int
+    
+    """Language: Breton"""
+    BRETON: int
+    
+    """Language: Bulgarian"""
+    BULGARIAN: int
+    
+    """Language: Burmese"""
+    BURMESE: int
+    
+    """Language: Catalan"""
+    CATALAN: int
+    
+    """Language: Central Kurdish (Iraq)"""
+    CENTRAL_KURDISH_IRAQ: int
+    
+    """Language: Cherokee"""
+    CHEROKEE: int
+    
+    """Language: Chinese (Hong Kong)"""
+    CHINESE_HONG_KONG: int
+    
+    """Language: Chinese (Macao)"""
+    CHINESE_MACAO: int
+    
+    """Language: Chinese (PRC)"""
+    CHINESE_PRC: int
+    
+    """Language: Chinese (Singapore)"""
+    CHINESE_SINGAPORE: int
+    
+    """Language: Chinese (Taiwan)"""
+    CHINESE_TAIWAN: int
+    
+    """Language: Corsican"""
+    CORSICAN: int
+    
+    """Language: Croatian (Bosnia and Herzegovina)"""
+    CROATIAN_BOZNIA_AND_HERZEGOVINA: int
+    
+    """Language: Croatian"""
+    CROATIAN: int
+    
+    """Language: Czech"""
+    CZECH: int
+    
+    """Language: Danish"""
+    DANISH: int
+    
+    """Language: Divehi"""
+    DIVEHI: int
+    
+    """Language: Dutch (Belgium)"""
+    DUTCH_BELGIUM: int
+    
+    """Language: Dutch (Netherlands)"""
+    DUTCH_NETHERLANDS: int
+    
+    """Language: Edo"""
+    EDO: int
+    
+    """Language: English (Australia)"""
+    ENGLISH_AUSTRALIA: int
+    
+    """Language: English (Belize)"""
+    ENGLISH_BELIZE: int
+    
+    """Language: English (Canada)"""
+    ENGLISH_CANADA: int
+    
+    """Language: English (Caribbean)"""
+    ENGLISH_CARIBBEAN: int
+    
+    """Language: English (Hong Kong)"""
+    ENGLISH_HONG_KONG: int
+    
+    """Language: English (India)"""
+    ENGLISH_INDIA: int
+    
+    """Language: English (Indonesia)"""
+    ENGLISH_INDONESIA: int
+    
+    """Language: English (Ireland)"""
+    ENGLISH_IRELAND: int
+    
+    """Language: English (Jamaica)"""
+    ENGLISH_JAMAICA: int
+    
+    """Language: English (Malaysia)"""
+    ENGLISH_MALAYSIA: int
+    
+    """Language: English (New Zealand)"""
+    ENGLISH_NEW_ZEALAND: int
+    
+    """Language: English (Philippines)"""
+    ENGLISH_PHILIPPINES: int
+    
+    """Language: English (Singapore)"""
+    ENGLISH_SINGAPORE: int
+    
+    """Language: English (South Africa)"""
+    ENGLISH_SOUTH_AFRICA: int
+    
+    """Language: English (Trinidad and Tobago)"""
+    ENGLISH_TRINIDAD_AND_TOBAGO: int
+    
+    """Language: English (UK)"""
+    ENGLISH_UK: int
+    
+    """Language: English (US)"""
+    ENGLISH_US: int
+    
+    """Language: English (Zimbabwe)"""
+    ENGLISH_ZIMBABWE: int
+    
+    """Language: Estonian"""
+    ESTONIAN: int
+    
+    """Language: Faeroese"""
+    FAEROESE: int
+    
+    """Language: Filipino"""
+    FILIPINO: int
+    
+    """Language: Finnish"""
+    FINNISH: int
+    
+    """Language: French (Belgium)"""
+    FRENCH_BELGIUM: int
+    
+    """Language: French (Canada)"""
+    FRENCH_CANADA: int
+    
+    """Language: French (France)"""
+    FRENCH_FRANCE: int
+    
+    """Language: French (Luxembourg)"""
+    FRENCH_LUXEMBOURG: int
+    
+    """Language: French (Monaco)"""
+    FRENCH_MONACO: int
+    
+    """Language: French (Switzerland)"""
+    FRENCH_SWITZERLAND: int
+    
+    """Language: Frisian"""
+    FRISIAN: int
+    
+    """Language: Fulah (Latin, Senegal)"""
+    FULAH_LATIN_SENEGAL: int
+    
+    """Language: Fulah (Nigeria)"""
+    FULAH_NIGERIA: int
+    
+    """Language: Galician"""
+    GALICIAN: int
+    
+    """Language: Georgian"""
+    GEORGIAN: int
+    
+    """Language: German (Austria)"""
+    GERMAN_AUSTRIA: int
+    
+    """Language: German (Germany)"""
+    GERMAN_GERMANY: int
+    
+    """Language: German (Liechtenstein)"""
+    GERMAN_LIECHTENSTEIN: int
+    
+    """Language: German (Luxembourg)"""
+    GERMAN_LUXEMBOURG: int
+    
+    """Language: German (Switzerland)"""
+    GERMAN_SWITZERLAND: int
+    
+    """Language: Greek"""
+    GREEK: int
+    
+    """Language: Greenlandic"""
+    GREENLANDIC: int
+    
+    """Language: Guarani"""
+    GUARANI: int
+    
+    """Language: Gujarati"""
+    GUJARATI: int
+    
+    """Language: Hausa"""
+    HAUSA: int
+    
+    """Language: Hawaiian"""
+    HAWAIIAN: int
+    
+    """Language: Hebrew"""
+    HEBREW: int
+    
+    """Language: Hindi"""
+    HINDI: int
+    
+    """Language: Hungarian"""
+    HUNGARIAN: int
+    
+    """Language: Icelandic"""
+    ICELANDIC: int
+    
+    """Language: Igbo"""
+    IGBO: int
+    
+    """Language: Inari Sami (Finland)"""
+    INARI_SAMI_FINLAND: int
+    
+    """Language: Indonesian"""
+    INDONESIAN: int
+    
+    """Language: Inuktitut (Latin)"""
+    INUKTITUT_LATIN: int
+    
+    """Language: Inuktitut (Syllabics)"""
+    INUKTITUT_SYLLABICS: int
+    
+    """Language: Irish"""
+    IRISH: int
+    
+    """Language: IsiXhosa"""
+    ISI_XHOSA: int
+    
+    """Language: IsiZulu"""
+    ISI_ZULU: int
+    
+    """Language: Italian (Italy)"""
+    ITALIAN_ITALY: int
+    
+    """Language: Italian (Switzerland)"""
+    ITALIAN_SWITZERLAND: int
+    
+    """Language: Japanese"""
+    JAPANESE: int
+    
+    """Language: Kannada"""
+    KANNADA: int
+    
+    """Language: Kanuri"""
+    KANURI: int
+    
+    """Language: Kashmiri"""
+    KASHMIRI: int
+    
+    """Language: Kashmiri (Arabic)"""
+    KASHMIRI_ARABIC: int
+    
+    """Language: Kazakh"""
+    KAZAKH: int
+    
+    """Language: Khmer"""
+    KHMER: int
+    
+    """Language: Kiche"""
+    KICHE: int
+    
+    """Language: Kinyarwanda"""
+    KINYARWANDA: int
+    
+    """Language: Kiswahili"""
+    KISWAHILI: int
+    
+    """Language: Konkani"""
+    KONKANI: int
+    
+    """Language: Korean"""
+    KOREAN: int
+    
+    """Language: Kyrgyz"""
+    KYRGYZ: int
+    
+    """Language: Lao"""
+    LAO: int
+    
+    """Language: Latin"""
+    LATIN: int
+    
+    """Language: Latvian"""
+    LATVIAN: int
+    
+    """Language: Lithuanian"""
+    LITHUANIAN: int
+    
+    """Language: Lower Sorbian"""
+    LOWER_SORBIAN: int
+    
+    """Language: Lule Sami (Norway)"""
+    LULE_SAMI_NORWAY: int
+    
+    """Language: Lule Sami (Sweden)"""
+    LULE_SAMI_SWEDEN: int
+    
+    """Language: Luxembourgish"""
+    LUXEMBOUGISH: int
+    
+    """Language: Macedonian"""
+    MACEDONIAN: int
+    
+    """Language: Malay (Malaysia)"""
+    MALAY_MALAYSIA: int
+    
+    """Language: Malay (Brunei Darussalam)"""
+    MALAY_BRUNEI_DARUSSALAM: int
+    
+    """Language: Malayalam"""
+    MALAYALAM: int
+    
+    """Language: Maltese"""
+    MALTESE: int
+    
+    """Language: Manipuri"""
+    MANIPURI: int
+    
+    """Language: Maori"""
+    MAORI: int
+    
+    """Language: Mapudungun (Chile)"""
+    MAPUDUNGUN_CHILE: int
+    
+    """Language: Marathi"""
+    MARATHI: int
+    
+    """Language: Mohawk"""
+    MOHAWK: int
+    
+    """Language: Mongolian (Cyrillic)"""
+    MONGOLIAN_CYRILLIC: int
+    
+    """Language: Mongolian (Mongolian)"""
+    MONGOLIAN_MONGOLIAN: int
+    
+    """Language: Nepali"""
+    NEPALI: int
+    
+    """Language: Northern Sami (Finland)"""
+    NORTHERN_SAMI_FINLAND: int
+    
+    """Language: Northern Sami (Norway)"""
+    NORTHERN_SAMI_NORWAY: int
+    
+    """Language: Northern Sami (Sweden)"""
+    NORTHERN_SAMI_SWEDEN: int
+    
+    """Language: Norwegian Bokmal"""
+    NORWEGIAN_BOKMAL: int
+    
+    """Language: Norwegian Nynorsk"""
+    NORWEGIAN_NYNORSK: int
+    
+    """Language: Oriya"""
+    ORIYA: int
+    
+    """Language: Oromo"""
+    OROMO: int
+    
+    """Language: Papiamentu"""
+    PAPIAMENTU: int
+    
+    """Language: Pashto"""
+    PASHTO: int
+    
+    """Language: Persian"""
+    PERSIAN: int
+    
+    """Language: Polish"""
+    POLISH: int
+    
+    """Language: Portuguese (Brazil)"""
+    PORTUGUESE_BRAZIL: int
+    
+    """Language: Portuguese (Portugal)"""
+    PORTUGUESE_PORTUGAL: int
+    
+    """Language: Punjabi (India)"""
+    PUNJABI_INDIA: int
+    
+    """Language: Punjabi (Pakistan)"""
+    PUNJABI_PAKISTAN: int
+    
+    """Language: Quechua (Bolivia)"""
+    QUECHUA_BOLIVIA: int
+    
+    """Language: Quechua (Ecuador)"""
+    QUECHUA_ECUADOR: int
+    
+    """Language: Quechua (Peru)"""
+    QUECHUA_PERU: int
+    
+    """Language: Romanian"""
+    ROMANIAN: int
+    
+    """Language: Romansh"""
+    ROMANSH: int
+    
+    """Language: Russian"""
+    RUSSIAN: int
+    
+    """Language: Sakha"""
+    SAKHA: int
+    
+    """Language: Sanskrit"""
+    SANSKRIT: int
+    
+    """Language: Scottish Gaelic"""
+    SCOTTISH_GAELIC: int
+    
+    """Language: Serbian (Cyrillic, Bosnia and Herzegovina)"""
+    SERBIAN_CYRILLIC_BOSNIA_AND_HERZEGOVINA: int
+    
+    """Language: Serbian (Cyrillic, Serbia and Montenegro)"""
+    SERBIAN_CYRILLIC_SERBIA_AND_MONTENEGRO: int
+    
+    """Language: Serbian (Latin, Bosnia and Herzegovina)"""
+    SERBIAN_LATIN_BOSNIA_AND_HERZEGOVINA: int
+    
+    """Language: Serbian (Latin, Serbia and Montenegro)"""
+    SERBIAN_LATIN_SERBIA_AND_MONTENEGRO: int
+    
+    """Language: Sindhi"""
+    SINDHI: int
+    
+    """Language: Sindhi (Devanagari)"""
+    SINDHI_DEVANAGARIC: int
+    
+    """Language: Sinhalese"""
+    SINHALESE: int
+    
+    """Language: Slovak"""
+    SLOVAK: int
+    
+    """Language: Slovenian"""
+    SLOVENIAN: int
+    
+    """Language: Somali"""
+    SOMALI: int
+    
+    """Language: Sorbian"""
+    SORBIAN: int
+    
+    """Language: Spanish (Argentina)"""
+    SPANISH_ARGENTINA: int
+    
+    """Language: Spanish (Bolivia)"""
+    SPANISH_BOLIVIA: int
+    
+    """Language: Spanish (Chile)"""
+    SPANISH_CHILE: int
+    
+    """Language: Spanish (Colombia)"""
+    SPANISH_COLOMBIA: int
+    
+    """Language: Spanish (Costa Rica)"""
+    SPANISH_COSTA_RICA: int
+    
+    """Language: Spanish (Dominican Republic)"""
+    SPANISH_DOMINICAN_REPUBLIC: int
+    
+    """Language: Spanish (Ecuador)"""
+    SPANISH_ECUADOR: int
+    
+    """Language: Spanish (El Salvador)"""
+    SPANISH_EL_SALVADOR: int
+    
+    """Language: Spanish (Guatemala)"""
+    SPANISH_GUATEMALA: int
+    
+    """Language: Spanish (Honduras)"""
+    SPANISH_HONDURAS: int
+    
+    """Language: Spanish (Mexico)"""
+    SPANISH_MEXICO: int
+    
+    """Language: Spanish (Nicaragua)"""
+    SPANISH_NICARAGUA: int
+    
+    """Language: Spanish (Panama)"""
+    SPANISH_PANAMA: int
+    
+    """Language: Spanish (Paraguay)"""
+    SPANISH_PARAGUAY: int
+    
+    """Language: Spanish (Peru)"""
+    SPANISH_PERU: int
+    
+    """Language: Spanish (Puerto Rico)"""
+    SPANISH_PUERTO_RICO: int
+    
+    """Language: Spanish (Spain, Modern Sort)"""
+    SPANISH_SPAIN_MODERN_SORT: int
+    
+    """Language: Spanish (Spain, Traditional Sort)"""
+    SPANISH_SPAIN_TRADITIONAL_SORT: int
+    
+    """Language: Spanish (Uruguay)"""
+    SPANISH_URUGUAY: int
+    
+    """Language: Spanish (Venezuela)"""
+    SPANISH_VENEZUELA: int
+    
+    """Language: Sutu"""
+    SUTU: int
+    
+    """Language: Swedish (Finland)"""
+    SWEDISH_FINLAND: int
+    
+    """Language: Swedish (Sweden)"""
+    SWEDISH_SWEDEN: int
+    
+    """Language: Syriac"""
+    SYRIAC: int
+    
+    """Language: Tajik"""
+    TAJIK: int
+    
+    """Language: Tamazight"""
+    TAMAZIGHT: int
+    
+    """Language: Tamazight (Latin)"""
+    TAMAZIGHT_LATIN: int
+    
+    """Language: Tamil"""
+    TAMIL: int
+    
+    """Language: Tatar"""
+    TATAR: int
+    
+    """Language: Telugu"""
+    TELUGU: int
+    
+    """Language: Thai"""
+    THAI: int
+    
+    """Language: Tibetan (Bhutan)"""
+    TIBETAN_BUTAN: int
+    
+    """Language: Tibetan (China)"""
+    TIBETAN_CHINA: int
+    
+    """Language: Tigrigna (Eritrea)"""
+    TIGRIGNA_ERITREA: int
+    
+    """Language: Tigrigna (Ethiopia)"""
+    TIGRIGNA_ETHIOPIA: int
+    
+    """Language: Tsonga"""
+    TSONGA: int
+    
+    """Language: Tswana"""
+    TSWANA: int
+    
+    """Language: Turkish"""
+    TURKISH: int
+    
+    """Language: Turkmen"""
+    TURKMEN: int
+    
+    """Language: Ukrainian"""
+    UKRAINIAN: int
+    
+    """Language: Urdu"""
+    URDU: int
+    
+    """Language: Uzbek (Cyrillic)"""
+    UZBEK_CYRILLIC: int
+    
+    """Language: Uzbek (Latin)"""
+    UZBEK_LATIN: int
+    
+    """Language: Venda"""
+    VENDA: int
+    
+    """Language: Vietnamese"""
+    VIETNAMESE: int
+    
+    """Language: Welsh"""
+    WELSH: int
+    
+    """Language: Yi"""
+    YI: int
+    
+    """Language: Yiddish"""
+    YIDDISH: int
+    
+    """Language: Yoruba"""
+    YORUBA: int
+    
+
+class HtmlControlType(Enum):
+    """Type of document nodes that represent \<input\> and \<select\> elements imported from HTML."""
+    
+    """A form field."""
+    FORM_FIELD: int
+    
+    """A structured document tag"""
+    STRUCTURED_DOCUMENT_TAG: int
+    
+
+class ResourceLoadingAction(Enum):
+    """Specifies the mode of resource loading.
+    To learn more, visit the `Specify Load Options <https://docs.aspose.com/words/python-net/specify-load-options/>` documentation article."""
+    
+    """Aspose.Words will load this resource as usual."""
+    DEFAULT: int
+    
+    """Aspose.Words will skip loading of this resource.
+    Only link without data will be stored for an image, CSS style sheet will be ignored for HTML format."""
+    SKIP: int
+    
+    """Aspose.Words will use byte array provided by user in :meth:`ResourceLoadingArgs.set_data` as resource data."""
+    USER_PROVIDED: int
+    
+
+class ResourceType(Enum):
+    """Type of loaded resource."""
+    
+    """Image."""
+    IMAGE: int
+    
+    """Font."""
+    FONT: int
+    
+    """CSS style sheet."""
+    CSS_STYLE_SHEET: int
+    
+    """Document."""
+    DOCUMENT: int
+    
+
+class TxtLeadingSpacesOptions(Enum):
+    """Specifies available options for leading space handling during import from :attr:`aspose.words.LoadFormat.TEXT` file."""
+    
+    """Leading spaces are removed and converted to left indent."""
+    CONVERT_TO_INDENT: int
+    
+    """Leading spaces are trimmed"""
+    TRIM: int
+    
+    """Leading spaces are preserved."""
+    PRESERVE: int
+    
+
+class TxtTrailingSpacesOptions(Enum):
+    """Specifies available options for trailing spaces handling during import from :attr:`aspose.words.LoadFormat.TEXT` file."""
+    
+    """Trailing spaces are trimmed."""
+    TRIM: int
+    
+    """Trailing spaces are preserved."""
+    PRESERVE: int
+    
+

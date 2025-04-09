@@ -1,0 +1,2 @@
+[pyinstaller40]
+hook-dirs = aspose.words:get_pyinstaller_hook_dirs

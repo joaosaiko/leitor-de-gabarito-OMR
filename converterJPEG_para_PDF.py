@@ -4,6 +4,6 @@ import aspose.words as aw
 doc = aw.Document()
 builder = aw.DocumentBuilder(doc)
 
-builder.insert_image("9.jpg")
+builder.insert_image("files_gab_test/completo.jpg")
 
-doc.save("9.pdf")
+doc.save("Gabarito Completo Marcado.pdf")

@@ -4,3 +4,4 @@ opencv-python
 numpy
 pdf2image
 python-multipart
+aspose-words
