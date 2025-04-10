@@ -131,11 +131,42 @@ async def process_pdf(file: UploadFile = File(...)):
             question = img[y1:y2, 0:w]
             choice = detect_marked_choice(question)
             question_number = col_idx * questions_per_col + i + 1
-            answers.append((question_number, choice))
+            answers.append((question_number, choice))    
 
-    
+    def detect_marked_matricula(thresh_matricula):
+        height, width = thresh_matricula.shape
+        num_digits = 8 
+        new_width = width - (width % num_digits)
+        thresh_matricula = thresh_matricula[:, :new_width]
+        columns = np.hsplit(thresh_matricula, num_digits)
+        matricula_digits = []
+
+        for col in columns:
+            col_height = col.shape[0]
+            adjusted_height = col_height - (col_height % 10)
+            col = col[:adjusted_height, :]  # Ajusta a altura
+            digit_rows = np.vsplit(col, 10)  # Agora garantido
+            pixel_counts = [cv2.countNonZero(row) for row in digit_rows]
+            max_index = np.argmax(pixel_counts)
+            if pixel_counts[max_index] > 1500:  # Threshold for a marked digit
+                matricula_digits.append(str(max_index))
+            else:
+                matricula_digits.append(None)
+
+        return matricula_digits
+
 
     detected = {}
+    # Detect matricula
+    matricula_digits = detect_marked_matricula(matricula_thresh)
+    print("Detected matricula:", matricula_digits)
+
+    # Save matricula as a string in the JSON output
+    detected["_matricula"] = {
+        "digits": matricula_digits,
+        "as_string": "".join(digit if digit else "_" for digit in matricula_digits)
+    }
+
     filled, blank = 0, 0
     for num, ans in answers:
         if ans:
