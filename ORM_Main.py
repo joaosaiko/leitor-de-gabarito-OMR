@@ -13,7 +13,7 @@ app = FastAPI()
 
 # Mock answer key for 60 questions (A, B, C, D, E repeating)
 answer_key = {
-    1: 'A',  2: 'B',  3: 'C',  4: 'D',  5: 'E',
+    1: 'C',  2: 'B',  3: 'C',  4: 'D',  5: 'E',
     6: 'D',  7: 'C',  8: 'B',  9: 'A', 10: 'B',
     11: 'C', 12: 'D', 13: 'E', 14: 'D', 15: 'C',
     16: 'A', 17: 'A', 18: 'A', 19: 'A', 20: 'B',
@@ -154,7 +154,6 @@ async def process_pdf(file: UploadFile = File(...)):
                 matricula_digits.append(None)
 
         return matricula_digits
-
 
     detected = {}
     # Detect matricula
