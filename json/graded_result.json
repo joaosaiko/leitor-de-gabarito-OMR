@@ -205,9 +205,9 @@
         "status": "incorrect"
     },
     "42": {
-        "answer": null,
+        "answer": "D",
         "correct_answer": "B",
-        "status": "blank"
+        "status": "incorrect"
     },
     "43": {
         "answer": "E",
@@ -215,9 +215,9 @@
         "status": "incorrect"
     },
     "44": {
-        "answer": null,
+        "answer": "D",
         "correct_answer": "B",
-        "status": "blank"
+        "status": "incorrect"
     },
     "45": {
         "answer": "C",
@@ -301,8 +301,8 @@
     },
     "_summary": {
         "correct": 16,
-        "incorrect": 26,
-        "blank": 18,
+        "incorrect": 28,
+        "blank": 16,
         "accuracy_percent": 26.67
     }
 }

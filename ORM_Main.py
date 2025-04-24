@@ -74,7 +74,7 @@ async def process_pdf(file: UploadFile = File(...)):
         x, y, w, h = cv2.boundingRect(first_col_pts)
         first_col_img = img[y:y+h, x:x+w]
         gray = cv2.cvtColor(first_col_img, cv2.COLOR_BGR2GRAY)
-        thresh = cv2.threshold(gray, 150, 255, cv2.THRESH_BINARY_INV)[1]
+        thresh = cv2.threshold(gray, 180, 255, cv2.THRESH_BINARY_INV)[1]
         path = os.path.join("cutouts", "column_1.png")
         cv2.imwrite(path, thresh)
         cutout_paths.append(path)
@@ -84,7 +84,7 @@ async def process_pdf(file: UploadFile = File(...)):
         x, y, w, h = cv2.boundingRect(matricula_pts)
         matricula_img = img[y:y+h, x:x+w]
         matricula_gray = cv2.cvtColor(matricula_img, cv2.COLOR_BGR2GRAY)
-        matricula_thresh = cv2.threshold(matricula_gray, 150, 255, cv2.THRESH_BINARY_INV)[1]
+        matricula_thresh = cv2.threshold(matricula_gray, 180, 255, cv2.THRESH_BINARY_INV)[1]
 
         # Save matricula in a new folder
         matricula_path = os.path.join("matricula", "matricula.png")
@@ -95,7 +95,7 @@ async def process_pdf(file: UploadFile = File(...)):
             x, y, w, h = cv2.boundingRect(pts)
             col_img = img[y:y+h, x:x+w]
             gray = cv2.cvtColor(col_img, cv2.COLOR_BGR2GRAY)
-            thresh = cv2.threshold(gray, 150, 255, cv2.THRESH_BINARY_INV)[1]
+            thresh = cv2.threshold(gray, 180, 255, cv2.THRESH_BINARY_INV)[1]
             path = os.path.join("cutouts", f"column_{idx+2}.png")
             cv2.imwrite(path, thresh)
             cutout_paths.append(path)

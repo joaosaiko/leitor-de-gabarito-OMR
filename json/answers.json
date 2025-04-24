@@ -1,16 +1,16 @@
 {
     "_matricula": {
         "digits": [
-            null,
-            null,
+            "2",
+            "1",
             "2",
             "4",
             "3",
             "5",
-            null,
-            null
+            "3",
+            "0"
         ],
-        "as_string": "__2435__"
+        "as_string": "21243530"
     },
     "1": null,
     "2": null,
@@ -53,9 +53,9 @@
     "39": "C",
     "40": "C",
     "41": "D",
-    "42": null,
+    "42": "D",
     "43": "E",
-    "44": null,
+    "44": "D",
     "45": "C",
     "46": "A",
     "47": "C",
@@ -73,7 +73,7 @@
     "59": "B",
     "60": "C",
     "_summary": {
-        "marked_answers": 42,
-        "blank_answers": 18
+        "marked_answers": 44,
+        "blank_answers": 16
     }
 }
