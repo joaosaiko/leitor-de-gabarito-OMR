@@ -22,22 +22,24 @@ Este projeto é um sistema de leitura automática de gabaritos baseado em marca�
 # Instalação 📘
 ### Clone o repositório
 ```
-Clone o repositório
 git clone https://github.com/joaosaiko/leitor-de-gabairto-OMR.git
+
 cd leitor-de-gabairto-OMR
 ```
-### Crie um ambiente virtual (opcional pois já está criado no projeto, caso haja problema crie novamente)
+### Crie um ambiente virtual (Opcional pois já está criado no projeto, caso haja problema crie novamente)
 ```
 python -m venv venv
+
 source venv/bin/activate  # Linux/macOS
+
 venv\Scripts\activate     # Windows
 ```
-### Instale as dependências
+### Instale as dependências (Dentro do VsCode ou IDE que esteja utilizando, abra o terminal e cole o comando abaixo)
 ```
 pip install -r requirements.txt
 ```
 # Como usar 💭
-### Execute o servidor FastAPI
+### Execute o servidor FastAPI (No terminal da IDE utilizada)
 ```
 uvicorn OMR_MAIN:app --reload
 ```
