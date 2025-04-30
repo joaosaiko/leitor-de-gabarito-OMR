@@ -12,7 +12,7 @@ def findRectContours(contours):
             approx = cv2.approxPolyDP(cnt, 0.02 * peri, True)
             if len(approx) == 4:
                 rectContours.append(cnt)
-    rectContours = sorted(rectContours, key=cv2.contourArea, reverse=True)
+    rectContours = sorted(rectContours, key=cv2.contourArea, reverse=True)  
     return rectContours
 
 def getCornerPoints(contour):
