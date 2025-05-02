@@ -10,7 +10,7 @@ from tempfile import NamedTemporaryFile
 
 app = FastAPI()
 
-# Mock answer key for 60 questions (A, B, C, D, E repeating)
+# Mock answer key
 answer_key = {
     1: 'A',  2: 'B',  3: 'C',  4: 'D',  5: 'E',
     6: 'D',  7: 'C',  8: 'B',  9: 'A', 10: 'B',
@@ -28,25 +28,20 @@ answer_key = {
 
 @app.post("/process-pdf")
 async def process_pdf(file: UploadFile = File(...)):
-    from tempfile import NamedTemporaryFile
-
     os.makedirs("jpeg", exist_ok=True)
     os.makedirs("json", exist_ok=True)
     os.makedirs("cutouts", exist_ok=True)
     os.makedirs("matricula", exist_ok=True)
 
-    # Salvar PDF temporário
     with NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
         tmp.write(await file.read())
         tmp_path = tmp.name
 
-    # Converter para imagem
     pages = convert_from_path(tmp_path, dpi=300)
     jpeg_path = os.path.join("jpeg", "page_1.jpeg")
     pages[0].save(jpeg_path, "JPEG")
 
     img = cv2.imread(jpeg_path)
-    #resized_img = cv2.resize(img, (1300, 1700)) tirei o resize para manter a proporção original e está funcionando melhor do que antes
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     blur = cv2.GaussianBlur(gray, (5, 5), 1)
     canny = cv2.Canny(blur, 10, 30)
@@ -61,36 +56,38 @@ async def process_pdf(file: UploadFile = File(...)):
             if len(approx) == 4:
                 rectangles.append(approx)
 
-    rectangles = sorted(rectangles, key=lambda cnt: np.min(cnt[:, 0]))
+    recortes_info = []
+    for rect in rectangles:
+        x, y, w, h = cv2.boundingRect(rect)
+        recortes_info.append({"x": x, "y": y, "w": w, "h": h, "rect": rect})
+
+    recortes_info = sorted(recortes_info, key=lambda r: (r["y"], -r["w"]))
+    matricula_info = max(recortes_info, key=lambda r: r["w"] / r["h"])
+    cutout_infos = [r for r in recortes_info if r != matricula_info]
+    cutout_infos = sorted(cutout_infos, key=lambda r: r["x"])
+
 
     cutout_paths = []
-    matricula_path = None
-
-    for idx, rect in enumerate(rectangles):
-        x, y, w, h = cv2.boundingRect(rect)
+    for idx, info in enumerate(cutout_infos):
+        x, y, w, h = cv2.boundingRect(info["rect"])
         crop = img[y:y+h, x:x+w]
+        gray = cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY)
+        thresh = cv2.threshold(gray, 180, 255, cv2.THRESH_BINARY_INV)[1]
+        path = os.path.join("cutouts", f"column_{idx}.png")
+        cv2.imwrite(path, thresh)
+        cutout_paths.append(path)
 
-        if idx == 2:
-            # Matrícula
-            matricula_img = crop
-            matricula_gray = cv2.cvtColor(matricula_img, cv2.COLOR_BGR2GRAY)
-            matricula_thresh = cv2.threshold(matricula_gray, 180, 255, cv2.THRESH_BINARY_INV)[1]
-            matricula_path = os.path.join("matricula", "matricula.png")
-            cv2.imwrite(matricula_path, matricula_thresh)
-        else:
-            # Colunas de respostas
-            col_img = crop
-            gray = cv2.cvtColor(col_img, cv2.COLOR_BGR2GRAY)
-            thresh = cv2.threshold(gray, 180, 255, cv2.THRESH_BINARY_INV)[1]
-            path = os.path.join("cutouts", f"column_{idx}.png")
-            cv2.imwrite(path, thresh)
-            cutout_paths.append(path)
+    x, y, w, h = cv2.boundingRect(matricula_info["rect"])
+    matricula_img = img[y:y+h, x:x+w]
+    matricula_gray = cv2.cvtColor(matricula_img, cv2.COLOR_BGR2GRAY)
+    matricula_thresh = cv2.threshold(matricula_gray, 180, 255, cv2.THRESH_BINARY_INV)[1]
+    matricula_path = os.path.join("matricula", "matricula.png")
+    cv2.imwrite(matricula_path, matricula_thresh)
 
-    # --- Mesma lógica anterior para leitura de respostas ---
-    total_questions = 60
-    options = 5
-    cols = 4 # Número de colunas de respostas
-    questions_per_col = total_questions // cols
+    total_questions = 60 # total de questoes
+    options = 5 # numero de opcoes
+    cols = 4 # numero de colunas
+    questions_per_col = total_questions // cols # questoes por coluna
 
     def detect_marked_choice(thresh_question):
         height, width = thresh_question.shape
@@ -99,7 +96,7 @@ async def process_pdf(file: UploadFile = File(...)):
         columns = np.hsplit(thresh_question, options)
         pixel_counts = [cv2.countNonZero(col) for col in columns]
         print("Pixel counts:", pixel_counts)
-        threshold = 1500
+        threshold = 2000 # qualquer problema com as repostas sendo identificadas como null, modificar esse trecho
         marked_indices = [i for i, count in enumerate(pixel_counts) if count > threshold]
         if len(marked_indices) != 1:
             return None
@@ -139,16 +136,13 @@ async def process_pdf(file: UploadFile = File(...)):
                 matricula_digits.append(None)
         return matricula_digits
 
-    # Print the detected matricula
-    print("Matricula encontrada:", "".join(digit if digit else "_" for digit in detect_marked_matricula(matricula_thresh)))
+    matricula_digits = detect_marked_matricula(matricula_thresh)
+    print("Matricula encontrada:", "".join(d if d else "_" for d in matricula_digits))
 
     detected = {}
-    matricula_thresh = cv2.imread(matricula_path, cv2.IMREAD_GRAYSCALE)
-    matricula_digits = detect_marked_matricula(matricula_thresh)
-
     detected["_matricula"] = {
         "digits": matricula_digits,
-        "as_string": "".join(digit if digit else "_" for digit in matricula_digits)
+        "as_string": "".join(d if d else "_" for d in matricula_digits)
     }
 
     filled, blank = 0, 0
