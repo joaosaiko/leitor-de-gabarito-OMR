@@ -126,63 +126,51 @@ async def process_pdf(file: UploadFile = File(...)):
                 max_index = np.argmax(pixel_counts)
                 if pixel_counts[max_index] > 1500:
                     matricula_digits.append(str(max_index))
-
                 else:
                     matricula_digits.append(None)
             return matricula_digits
 
-        # Gabarito fixo por enquanto (substituir futuramente por JSON externo se quiser)
-        answer_key = {
-            1: 'A',  2: 'B',  3: 'C',  4: 'D',  5: 'E', 6: 'D',  7: 'C',  8: 'B',  9: 'A', 10: 'B',
-            11: 'C', 12: 'D', 13: 'E', 14: 'D', 15: 'C', 16: 'A', 17: 'A', 18: 'A', 19: 'B', 20: 'B',
-            21: 'B', 22: 'B', 23: 'C', 24: 'C', 25: 'C', 26: 'C', 27: 'C', 28: 'D', 29: 'D', 30: 'D',
-            31: 'A', 32: 'C', 33: 'D', 34: 'E', 35: 'D', 36: 'C', 37: 'B', 38: 'E', 39: 'A', 40: 'E',
-            41: 'C', 42: 'B', 43: 'A', 44: 'B', 45: 'C', 46: 'E', 47: 'D', 48: 'A', 49: 'A', 50: 'A',
-            51: 'B', 52: 'B', 53: 'C', 54: 'C', 55: 'C', 56: 'D', 57: 'D', 58: 'E', 59: 'D', 60: 'C'
-        }
-
+        # ===== NOVO BLOCO JSON + CSV =====
         matricula_digits = detect_marked_matricula(matricula_thresh)
-        detected = {
-            "_matricula": {
-                "digits": matricula_digits,
-                "as_string": "".join(d if d else "_" for d in matricula_digits)
-            }
-        }
+        matricula_str = "".join(d if d else "_" for d in matricula_digits)
+        pdf_name = file.filename
 
-        filled, blank = 0, 0
-        for num, ans in answers:
+        linhas = []
+        for idx, (num, ans) in enumerate(answers):
+            coluna_index = (num - 1) // questions_per_col + 1
+            alternativa_marcada = ["0"] * options
             if ans:
-                filled += 1
-            else:
-                blank += 1
-            detected[num] = ans
+                alternativa_idx = ord(ans.upper()) - 65
+                if 0 <= alternativa_idx < options:
+                    alternativa_marcada[alternativa_idx] = "1"
+            resposta_formatada = "-".join(alternativa_marcada)
+            linha = f"{pdf_name}, column_{coluna_index}, {matricula_str}, {resposta_formatada}"
+            linhas.append(linha)
 
-        detected["_summary"] = {
-            "marked_answers": filled,
-            "blank_answers": blank
-        }
+        # Salvar JSON
+        result_json_path = os.path.join(json_dir, "graded_result.json")
+        with open(result_json_path, "w") as f_json:
+            json.dump({"linhas": linhas}, f_json, indent=4)
 
-        with open(os.path.join(json_dir, "answers.json"), "w") as f:
-            json.dump(detected, f, indent=4)
+        # Salvar CSV
+        result_csv_path = os.path.join(json_dir, "graded_result.csv")
+        with open(result_csv_path, "w", encoding="utf-8") as f_csv:
+            f_csv.write("nome_do_arquivo;coluna;matricula;resposta\n")
+            for linha in linhas:
+                partes = linha.split(", ")
+                f_csv.write(";".join(partes) + "\n")
 
-        graded_result = utils.grade_answers(detected, answer_key)
-
-        result_path = os.path.join(json_dir, "graded_result.json")
-        with open(result_path, "w") as f:
-            json.dump(graded_result, f, indent=4)
-
-        # Agendar remoção automática após 10 minutos
         def remove_folder_later():
-            time.sleep(300)
+            time.sleep(120) # 2 minutos antes de limpar as pastas temporarias
             import shutil
             shutil.rmtree(base_dir, ignore_errors=True)
 
         threading.Thread(target=remove_folder_later, daemon=True).start()
 
         return {
-            "resultado": graded_result,
+            "resultado_linhas": linhas,
             "session_id": session_id,
-            "mensagem": "Resultado disponível por 10 minutos",
+            "mensagem": "Resultado disponível por 2 minutos",
         }
 
     except Exception as e:
