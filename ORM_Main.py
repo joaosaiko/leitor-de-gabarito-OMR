@@ -3,7 +3,6 @@ from fastapi.responses import JSONResponse
 import cv2
 import numpy as np
 import os
-import utils
 from pdf2image import convert_from_path
 import json
 from tempfile import NamedTemporaryFile
@@ -26,7 +25,6 @@ async def process_pdf(file: UploadFile = File(...)):
         os.makedirs(d, exist_ok=True)
 
     try:
-        # Salvar PDF temporário
         with NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
             tmp.write(await file.read())
             tmp_path = tmp.name
@@ -50,6 +48,17 @@ async def process_pdf(file: UploadFile = File(...)):
                 if len(approx) == 4:
                     rectangles.append(approx)
 
+        def ordenar_pontos(pontos):
+            pontos = pontos.reshape(4, 2)
+            soma = pontos.sum(axis=1)
+            diff = np.diff(pontos, axis=1)
+            ordenado = np.zeros((4, 2), dtype="float32")
+            ordenado[0] = pontos[np.argmin(soma)]
+            ordenado[2] = pontos[np.argmax(soma)]
+            ordenado[1] = pontos[np.argmin(diff)]
+            ordenado[3] = pontos[np.argmax(diff)]
+            return ordenado
+
         recortes_info = []
         for rect in rectangles:
             x, y, w, h = cv2.boundingRect(rect)
@@ -62,23 +71,36 @@ async def process_pdf(file: UploadFile = File(...)):
 
         cutout_paths = []
         for idx, info in enumerate(cutout_infos):
-            x, y, w, h = cv2.boundingRect(info["rect"])
-            crop = img[y:y+h, x:x+w]
-            gray = cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY)
+            pts = ordenar_pontos(info["rect"])
+            (tl, tr, br, bl) = pts
+            widthA = np.linalg.norm(br - bl)
+            widthB = np.linalg.norm(tr - tl)
+            maxWidth = int(max(widthA, widthB))
+            heightA = np.linalg.norm(tr - br)
+            heightB = np.linalg.norm(tl - bl)
+            maxHeight = int(max(heightA, heightB))
+
+            destino = np.array([
+                [0, 0],
+                [maxWidth - 1, 0],
+                [maxWidth - 1, maxHeight - 1],
+                [0, maxHeight - 1]], dtype="float32")
+
+            M = cv2.getPerspectiveTransform(pts, destino)
+            warp = cv2.warpPerspective(img, M, (maxWidth, maxHeight))
+            gray = cv2.cvtColor(warp, cv2.COLOR_BGR2GRAY)
             thresh = cv2.threshold(gray, 180, 255, cv2.THRESH_BINARY_INV)[1]
             path = os.path.join(cutouts_dir, f"column_{idx}.png")
             cv2.imwrite(path, thresh)
             cutout_paths.append(path)
 
-        # Salvar matrícula
         x, y, w, h = cv2.boundingRect(matricula_info["rect"])
         matricula_img = img[y:y+h, x:x+w]
         matricula_gray = cv2.cvtColor(matricula_img, cv2.COLOR_BGR2GRAY)
-        matricula_thresh = cv2.threshold(matricula_gray, 180, 255, cv2.THRESH_BINARY_INV)[1]
+        matricula_thresh = cv2.threshold(matricula_gray, 170, 255, cv2.THRESH_BINARY_INV)[1] #alterado de 180 para 170 resolveu o problema de matricula incorreta
         matricula_path = os.path.join(matricula_dir, "matricula.png")
         cv2.imwrite(matricula_path, matricula_thresh)
 
-        # Parâmetros de corte
         total_questions = 60
         options = 5
         cols = 4
@@ -123,14 +145,15 @@ async def process_pdf(file: UploadFile = File(...)):
                 col = col[:adjusted_height, :]
                 digit_rows = np.vsplit(col, 10)
                 pixel_counts = [cv2.countNonZero(row) for row in digit_rows]
-                max_index = np.argmax(pixel_counts)
-                if pixel_counts[max_index] > 1500:
-                    matricula_digits.append(str(max_index))
+                max_count = max(pixel_counts)
+                threshold = max_count * 0.6
+                marked_indices = [i for i, count in enumerate(pixel_counts) if count >= threshold]
+                if len(marked_indices) == 1:
+                    matricula_digits.append(str(marked_indices[0]))
                 else:
                     matricula_digits.append(None)
             return matricula_digits
-
-        # ===== NOVO BLOCO JSON + CSV =====
+ 
         matricula_digits = detect_marked_matricula(matricula_thresh)
         matricula_str = "".join(d if d else "_" for d in matricula_digits)
         pdf_name = file.filename
@@ -147,12 +170,10 @@ async def process_pdf(file: UploadFile = File(...)):
             linha = f"{pdf_name}, column_{coluna_index}, {matricula_str}, {resposta_formatada}"
             linhas.append(linha)
 
-        # Salvar JSON
         result_json_path = os.path.join(json_dir, "graded_result.json")
         with open(result_json_path, "w") as f_json:
             json.dump({"linhas": linhas}, f_json, indent=4)
 
-        # Salvar CSV
         result_csv_path = os.path.join(json_dir, "graded_result.csv")
         with open(result_csv_path, "w", encoding="utf-8") as f_csv:
             f_csv.write("nome_do_arquivo;coluna;matricula;resposta\n")
@@ -161,7 +182,7 @@ async def process_pdf(file: UploadFile = File(...)):
                 f_csv.write(";".join(partes) + "\n")
 
         def remove_folder_later():
-            time.sleep(120) # 2 minutos antes de limpar as pastas temporarias
+            time.sleep(360) # 6 minutos
             import shutil
             shutil.rmtree(base_dir, ignore_errors=True)
 
@@ -170,7 +191,7 @@ async def process_pdf(file: UploadFile = File(...)):
         return {
             "resultado_linhas": linhas,
             "session_id": session_id,
-            "mensagem": "Resultado disponível por 2 minutos",
+            "mensagem": "Resultado disponível por 6 minutos",
         }
 
     except Exception as e:
