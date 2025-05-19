@@ -89,7 +89,7 @@ async def process_pdf(file: UploadFile = File(...)):
             M = cv2.getPerspectiveTransform(pts, destino)
             warp = cv2.warpPerspective(img, M, (maxWidth, maxHeight))
             gray = cv2.cvtColor(warp, cv2.COLOR_BGR2GRAY)
-            thresh = cv2.threshold(gray, 180, 255, cv2.THRESH_BINARY_INV)[1]
+            thresh = cv2.threshold(gray, 180, 255, cv2.THRESH_BINARY_INV)[1] # se preciso, ajuste o valor 180 para melhorar a detecção caso a imagem esteja muito clara
             path = os.path.join(cutouts_dir, f"column_{idx}.png")
             cv2.imwrite(path, thresh)
             cutout_paths.append(path)
@@ -97,7 +97,7 @@ async def process_pdf(file: UploadFile = File(...)):
         x, y, w, h = cv2.boundingRect(matricula_info["rect"])
         matricula_img = img[y:y+h, x:x+w]
         matricula_gray = cv2.cvtColor(matricula_img, cv2.COLOR_BGR2GRAY)
-        matricula_thresh = cv2.threshold(matricula_gray, 170, 255, cv2.THRESH_BINARY_INV)[1] #alterado de 180 para 170 resolveu o problema de matricula incorreta
+        matricula_thresh = cv2.threshold(matricula_gray, 170, 255, cv2.THRESH_BINARY_INV)[1] # alterado de 180 para 170 resolveu o problema de matricula incorreta
         matricula_path = os.path.join(matricula_dir, "matricula.png")
         cv2.imwrite(matricula_path, matricula_thresh)
 
@@ -182,7 +182,7 @@ async def process_pdf(file: UploadFile = File(...)):
                 f_csv.write(";".join(partes) + "\n")
 
         def remove_folder_later():
-            time.sleep(360) # 6 minutos
+            time.sleep(1800) # 30 minutos
             import shutil
             shutil.rmtree(base_dir, ignore_errors=True)
 
@@ -191,18 +191,8 @@ async def process_pdf(file: UploadFile = File(...)):
         return {
             "resultado_linhas": linhas,
             "session_id": session_id,
-            "mensagem": "Resultado disponível por 6 minutos",
+            "mensagem": "Resultado disponível por 30 minutos",
         }
 
     except Exception as e:
         return JSONResponse(status_code=500, content={"erro": str(e)})
-
-@app.get("/resultado/{session_id}")
-def get_resultado(session_id: str):
-    result_path = os.path.join("temp", session_id, "json", "graded_result.json")
-    if not os.path.exists(result_path):
-        return JSONResponse(status_code=404, content={"erro": "Resultado expirado ou inexistente"})
-
-    with open(result_path, "r") as f:
-        result = json.load(f)
-    return result
