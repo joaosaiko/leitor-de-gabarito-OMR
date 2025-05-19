@@ -12,12 +12,28 @@ A aplicação:
 2. Converte o PDF em imagem.
 3. Detecta automaticamente os campos marcados com caneta ou lápis (respostas e matrícula).
 4. Compara as respostas com um gabarito oficial.
-5. Retorna um JSON com os resultados.
-6. Apaga os arquivos temporários após 10 minutos.
+5. Retorna um JSON e CSV com os resultados.
+6. Apaga os arquivos temporários após 6 minutos.
 
 ---
 
 ## 🚀 Como Usar
+### Clonar repositorio com git bash
+```bash
+git clone https://github.com/joaosaiko/leitor-de-gabarito-OMR.git
+```
+> ⚠️ Após clonar o repositório abra-o no VScode, certique de possua todas os requisitos necessario para a execução em Python.
+
+---
+
+### Instalar dependências necessárias:
+
+```bash
+pip install -r requirements.txt
+```
+> ⚠️ Importante: Para a biblioteca pdf2image funcionar corretamente, o Poppler deve ser baixado e adicionado nas variáveis do ambiente do Win ou intalado via terminal em quaisquer linux de base Debian ou Arch Linux.
+
+---
 
 ### ▶️ Subir o servidor
 
@@ -32,20 +48,20 @@ http://localhost:8000/docs
 
 ---
 
-## 📦 Dependências
+## 📦 Dependências utilizadas
 - fastapi
 - uvicorn
-- opencv-python-headless
+- opencv-python
 - numpy
 - pdf2image
+- python-multipart
 - uuid
-
-### Instalar:
-
-```bash
-pip install fastapi uvicorn opencv-python-headless numpy pdf2image
-```
-> ⚠️ Importante: Para pdf2image funcionar corretamente, o Poppler deve estar instalado. Guia de instalação (Windows)
+- aspose-words
+- time
+- threading
+- tempfile
+- json
+- os
 
 ---
 
@@ -64,7 +80,7 @@ temp/
 ## 🔍 Rotas da API
 
 POST /process-pdf
-Faz todo o processamento: conversão, detecção, correção e resposta final.
+Faz todo o processamento: conversão, detecção, abstração e armazenamento.
 
 Requisição:
 - Multipart/form-data com campo _file_ (PDF).
@@ -89,9 +105,9 @@ process_pdf(file: UploadFile)
 - Cria pastas temporárias com UUID.
 - Converte PDF para imagem com _pdf2image.convert_from_path._
 - Usa _cv2.Canny_ e _cv2.findContours_ para localizar retângulos (áreas marcadas).
-- Classifica os retângulos: o maior é assumido como a matrícula, os demais como colunas de questões.
+- Classifica os retângulos: o primeiro identificado é assumido como a matrícula, os demais como colunas de questões.
 - Cada coluna é cortada em blocos (1 bloco por questão) e cada questão é dividida horizontalmente em 5 partes (A, B, C, D, E).
-- A alternativa marcada é a que tiver mais pixels escuros.
+- A alternativa marcada é a que tiver maior agrupamento de pixel brancos.
 
 ---
 
@@ -115,48 +131,14 @@ def detect_marked_matricula(thresh_matricula):
 Divide a imagem da matrícula em 8 colunas (1 por dígito).
 
 - Cada coluna é dividida em 10 blocos horizontais (de 0 a 9).
-- O bloco com mais pixels escuros é considerado o número marcado.
-- Se nenhum bloco ultrapassar o limiar, considera como "não marcado".
+- O bloco com maior agrupamento de pixels em branco é considerado o número marcado.
+- Se nenhum bloco ultrapassar o limiar, considera como "não marcado" e adicionado "_" como sinal de que não foi possivel identificar o campo marcado.
 
 ---
 
-## 📘 Função: grade_answers(detected_answers, answer_key)
-Local: _utils.py_
-
-- Compara as respostas detectadas com o gabarito oficial.
-- Classifica cada questão como:
-- _correct_ se a resposta for igual ao gabarito
-- _incorrect_ se for diferente
-- _blank_ se nenhuma marcação foi detectada
-- Gera um resumo com:
-- Total de acertos
-- Total de erros
-- Total de questões em branco
-- Porcentagem de acerto
-
-## 📚 Explicação do utils.py
-
-```bash
-def findRectContours(contours): ...
-```
-
-- Filtra contornos que formam retângulos, ignorando ruídos pequenos.
-
-```bash
-def reorder(points): ...
-```
-
-- Reordena os 4 pontos de um retângulo para garantir consistência na leitura (cima/esquerda → baixo/direita).
-
-```bash
-def grade_answers(...): ...
-```
-
-- Realiza a correção final, já explicada acima.
-
 ## ⏳ Limpeza Automática
 
-Ao final do processamento, é iniciado um _threading.Thread_ com _sleep(300)_ para excluir automaticamente os arquivos temporários depois de 5 minutos.
+Ao final do processamento, é iniciado um _threading.Thread_ com _sleep(360)_ para excluir automaticamente os arquivos temporários depois de 6 minutos.
 
 ```bash
 threading.Thread(target=remove_folder_later, daemon=True).start()
