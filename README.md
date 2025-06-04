@@ -35,15 +35,9 @@ pip install -r requirements.txt
 
 ---
 
-### ▶️ Subir o servidor
-
-```bash
-uvicorn ORM_Main:app --reload
-```
-### ▶️ Depois, acesse:
-
-```bash
-http://localhost:8000/docs
+4
+ o
+ 43
 ```
 
 ---
