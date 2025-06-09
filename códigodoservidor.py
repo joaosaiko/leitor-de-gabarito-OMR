@@ -5,20 +5,21 @@ from pdf2image import convert_from_path
 import json
 import shutil
 from datetime import datetime
+import sys
+from pathlib import Path
 
 # Diretórios fixos no disco
-BASE_INPUT_DIR = r"C:\OMR\gabaritos\entrada"
-BASE_OUTPUT_DIR = r"C:\OMR\gabaritos\saida"
+BASE_INPUT_DIR = r"C:\appprointer\app\data\PDF"
+BASE_OUTPUT_DIR = r"C:\appprointer\app\data\Processados"
 
 # Cria diretórios se não existirem
 os.makedirs(BASE_INPUT_DIR, exist_ok=True)
 os.makedirs(BASE_OUTPUT_DIR, exist_ok=True)
 
 def sanitize_filename(filename):
-    # Remove ou substitui caracteres que podem causar problemas
     return "".join(c if c.isalnum() or c in [' ', '_', '-'] else "_" for c in filename)
 
-def process_pdf(input_pdf_path, upload_id=1):  # parâmetro upload_id adicionado
+def process_pdf(input_pdf_path, upload_id=1, gabarito_id=None, nome_arquivo=None):
     pdf_name_raw = os.path.splitext(os.path.basename(input_pdf_path))[0]
     pdf_name = sanitize_filename(pdf_name_raw)
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -33,12 +34,10 @@ def process_pdf(input_pdf_path, upload_id=1):  # parâmetro upload_id adicionado
     for d in [jpeg_dir, cutouts_dir, json_dir, matricula_dir]:
         os.makedirs(d, exist_ok=True)
 
-    print(f"Convertendo PDF em imagens: {input_pdf_path}")
     pages = convert_from_path(input_pdf_path, dpi=300)
-    
-    # Vamos montar um dicionário para agrupar resultados por página e coluna
+
     resultado = []
-    
+
     for page_idx, page in enumerate(pages):
         jpeg_path = os.path.join(jpeg_dir, f"page_{page_idx + 1}.jpeg")
         page.save(jpeg_path, "JPEG")
@@ -78,14 +77,16 @@ def process_pdf(input_pdf_path, upload_id=1):  # parâmetro upload_id adicionado
             x, y, w, h = cv2.boundingRect(rect)
             recortes_info.append({"x": x, "y": y, "w": w, "h": h, "rect": rect})
 
-        recortes_info = sorted(recortes_info, key=lambda r: (r["y"], -r["w"]))
-        if not recortes_info:
-            #print(f"Página {page_idx + 1}: Nenhum retângulo detectado.")
-            continue
+        recortes_info = sorted(recortes_info, key=lambda r: (r["y"], r["x"]))
 
-        matricula_info = max(recortes_info, key=lambda r: r["w"] / r["h"])
+        #if len(recortes_info) < 5:
+        #    print(f"Página {page_idx + 1}: menos de 5 retângulos detectados.")
+        #    continue
+
+        # Detecta a matrícula como o recorte mais largo e mais estreito verticalmente (padrão típico)
+        recortes_info_sorted = sorted(recortes_info, key=lambda r: (r["w"] / r["h"]), reverse=True)
+        matricula_info = recortes_info_sorted[0]
         cutout_infos = [r for r in recortes_info if r != matricula_info]
-        cutout_infos = sorted(cutout_infos, key=lambda r: r["x"])
 
         cutout_paths = []
         for idx, info in enumerate(cutout_infos):
@@ -112,6 +113,7 @@ def process_pdf(input_pdf_path, upload_id=1):  # parâmetro upload_id adicionado
             cv2.imwrite(path, thresh)
             cutout_paths.append(path)
 
+        # Trata a imagem de matrícula
         x, y, w, h = cv2.boundingRect(matricula_info["rect"])
         matricula_img = img[y:y + h, x:x + w]
         matricula_gray = cv2.cvtColor(matricula_img, cv2.COLOR_BGR2GRAY)
@@ -119,31 +121,34 @@ def process_pdf(input_pdf_path, upload_id=1):  # parâmetro upload_id adicionado
         matricula_path = os.path.join(matricula_dir, f"matricula_{page_idx + 1}.png")
         cv2.imwrite(matricula_path, matricula_thresh)
 
-        total_questions = 60
-        options = 5
-        cols = 4
-        questions_per_col = total_questions // cols
-
-        def detect_marked_choice(thresh_question):
+        def detect_marked_choice_vector(thresh_question):
             height, width = thresh_question.shape
+            options = 5
             new_width = width - (width % options)
             thresh_question = thresh_question[:, :new_width]
             columns = np.hsplit(thresh_question, options)
             pixel_counts = [cv2.countNonZero(col) for col in columns]
+
             total_pixels = sum(pixel_counts)
             if total_pixels < 1000:
                 return [0] * options
+
             max_count = max(pixel_counts)
             threshold = max_count * 0.6
             vector = [1 if count >= threshold else 0 for count in pixel_counts]
+
             if vector.count(1) != 1:
                 return [0] * options
+
             return vector
 
         answers = []
+        total_questions = 60
+        questions_per_col = total_questions // 4
         for col_idx, path in enumerate(cutout_paths):
             img_col = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
             if img_col is None:
+                print(f"Erro ao ler corte {path}")
                 continue
             h, w = img_col.shape
             box_height = h // questions_per_col
@@ -151,7 +156,7 @@ def process_pdf(input_pdf_path, upload_id=1):  # parâmetro upload_id adicionado
                 y1 = i * box_height
                 y2 = (i + 1) * box_height
                 question = img_col[y1:y2, 0:w]
-                vector = detect_marked_choice(question)
+                vector = detect_marked_choice_vector(question)
                 question_number = col_idx * questions_per_col + i + 1
                 answers.append((question_number, vector))
 
@@ -169,27 +174,27 @@ def process_pdf(input_pdf_path, upload_id=1):  # parâmetro upload_id adicionado
                 digit_rows = np.vsplit(col, 10)
                 pixel_counts = [cv2.countNonZero(row) for row in digit_rows]
                 max_count = max(pixel_counts)
-                threshold = max_count * 0.6
+                threshold = max_count * 0.7
                 marked_indices = [i for i, count in enumerate(pixel_counts) if count >= threshold]
                 if len(marked_indices) == 1:
                     matricula_digits.append(str(marked_indices[0]))
                 else:
-                    matricula_digits.append(None)
+                    matricula_digits.append("_")
             return matricula_digits
 
         matricula_digits = detect_marked_matricula(matricula_thresh)
-        matricula_str = "".join(d if d else "_" for d in matricula_digits)
+        matricula_str = "".join(matricula_digits)
 
-        # Agrupando as respostas por página e coluna para estrutura JSON
         agrupamento_colunas = {}
-        for (num, ans) in answers:
+        for (num, vec) in answers:
             coluna_index = (num - 1) // questions_per_col + 1
             if coluna_index not in agrupamento_colunas:
                 agrupamento_colunas[coluna_index] = []
-            resposta_formatada = ans if ans else "_"
-            agrupamento_colunas[coluna_index].append({"questao": num, "resposta": resposta_formatada})
+            agrupamento_colunas[coluna_index].append({
+                "questao": num,
+                "resposta_vetorial": vec
+            })
 
-        #necessario o campo pagina para manter a contagem das paginas no json e csv
         for coluna, respostas in agrupamento_colunas.items():
             resultado.append({
                 "pagina": page_idx + 1,
@@ -198,7 +203,6 @@ def process_pdf(input_pdf_path, upload_id=1):  # parâmetro upload_id adicionado
                 "respostas": respostas
             })
 
-    # Estrutura final do JSON
     json_structure = {
         "id": upload_id,
         "nome_do_arquivo": pdf_name,
@@ -209,25 +213,27 @@ def process_pdf(input_pdf_path, upload_id=1):  # parâmetro upload_id adicionado
     with open(result_json_path, "w", encoding="utf-8") as f_json:
         json.dump(json_structure, f_json, indent=4, ensure_ascii=False)
 
-    # CSV ainda no formato simples (você pode adaptar se desejar)
     result_csv_path = os.path.join(json_dir, "graded_result.csv")
     with open(result_csv_path, "w", encoding="utf-8") as f_csv:
-        f_csv.write("nome_do_arquivo;pagina;coluna;matricula;questao;A;B;C;D;E\n")
+        f_csv.write("Id_Gabarito;Arquivo;MATRICULA;QUESTAO;A;B;C;D;E\n")
+        print("Id_Gabarito;Arquivo;MATRICULA;QUESTAO;A;B;C;D;E")
         for pagina_info in resultado:
+            pag = pagina_info["pagina"]
             for resp in pagina_info["respostas"]:
-                #antiga estrutura para pegar as paginas (funcional porém complexa em relação ao JSON a estrutura do servidor)
-                a, b, c, d, e = resp["resposta"] if isinstance(resp["resposta"], list) else [0, 0, 0, 0, 0]
-                f_csv.write(f"{pdf_name};{pagina_info['pagina']};{pagina_info['coluna']};{pagina_info['matricula']};{resp['questao']};{a};{b};{c};{d};{e}\n")
+                linha_csv = f"{gabarito_id};{nome_arquivo}_page_{pag};{pagina_info['matricula']};{resp['questao']};" + ";".join(str(x) for x in resp['resposta_vetorial'])
+                f_csv.write(linha_csv + "\n")
+                print(linha_csv)
 
 if __name__ == "__main__":
-    # testar novos parametros de captura adicionados para saber se ele recebe parametro
-    # se recebe deixar, se não recebe analisar
     upload_counter = 1
+    gabarito_id = sys.argv[1]
+    nome_arquivo = Path(sys.argv[2]).stem
+
     for file in os.listdir(BASE_INPUT_DIR):
         if file.lower().endswith(".pdf"):
             full_path = os.path.join(BASE_INPUT_DIR, file)
             try:
-                process_pdf(full_path, upload_id=upload_counter)
+                process_pdf(full_path, upload_id=upload_counter, gabarito_id=gabarito_id, nome_arquivo=nome_arquivo)
                 upload_counter += 1
                 processed_dir = os.path.join(BASE_INPUT_DIR, "processados")
                 os.makedirs(processed_dir, exist_ok=True)
