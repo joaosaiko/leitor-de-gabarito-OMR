@@ -1,4 +1,3 @@
-
 import cv2
 import numpy as np
 import os
@@ -9,11 +8,9 @@ from datetime import datetime
 import sys
 from pathlib import Path
 
-
 # Diretórios fixos no disco
 BASE_INPUT_DIR = r"C:\appprointer\app\data\PDF"
 BASE_OUTPUT_DIR = r"C:\appprointer\app\data\Processados"
-
 
 # Cria diretórios se não existirem
 os.makedirs(BASE_INPUT_DIR, exist_ok=True)
@@ -22,7 +19,7 @@ os.makedirs(BASE_OUTPUT_DIR, exist_ok=True)
 def sanitize_filename(filename):
     return "".join(c if c.isalnum() or c in [' ', '_', '-'] else "_" for c in filename)
 
-def process_pdf(input_pdf_path, upload_id=1):
+def process_pdf(input_pdf_path, upload_id=1, gabarito_id=None, nome_arquivo=None):
     pdf_name_raw = os.path.splitext(os.path.basename(input_pdf_path))[0]
     pdf_name = sanitize_filename(pdf_name_raw)
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -37,7 +34,6 @@ def process_pdf(input_pdf_path, upload_id=1):
     for d in [jpeg_dir, cutouts_dir, json_dir, matricula_dir]:
         os.makedirs(d, exist_ok=True)
 
-    #print(f"Convertendo PDF em imagens: {input_pdf_path}")
     pages = convert_from_path(input_pdf_path, dpi=300)
 
     resultado = []
@@ -51,39 +47,29 @@ def process_pdf(input_pdf_path, upload_id=1):
             print(f"Erro: Não foi possível ler a imagem salva em {jpeg_path}")
             continue
 
-        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY) # Converte a imagem para escala de cinza
-        blur = cv2.GaussianBlur(gray, (5, 5), 0) # Ajuste o tamanho do kernel conforme necessário
-        thresh = cv2.adaptiveThreshold(blur, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 11, 2) # Aplica o limiar adaptativo
-        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (4, 4)) # Em casos de não identificação das colunas mudar o kernel para operações morfológicas
-        morph = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel) # Aplica fechamento morfológico
-        canny = cv2.Canny(morph, 50, 150) # Ajuste os valores de limiar conforme necessário
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        blur = cv2.GaussianBlur(gray, (5, 5), 1)
+        canny = cv2.Canny(blur, 10, 30)
 
-        contours, _ = cv2.findContours(canny, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE) # Encontra os contornos na imagem
+        contours, _ = cv2.findContours(canny, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         rectangles = []
         for cnt in contours:
-            area = cv2.contourArea(cnt) # Calcula a área do contorno
-            if area > 3000:
-                peri = cv2.arcLength(cnt, True) 
+            area = cv2.contourArea(cnt)
+            if area > 5000:
+                peri = cv2.arcLength(cnt, True)
                 approx = cv2.approxPolyDP(cnt, 0.02 * peri, True)
                 if len(approx) == 4:
                     rectangles.append(approx)
-        
-                # Salva imagem com retângulos detectados
-                img_rects = img.copy()
-                cv2.drawContours(img_rects, rectangles, -1, (0, 255, 0), 3)
-                rects_img_path = os.path.join("C:/Users/estagiario.inovacao/Desktop/leitor-de-gabarito-OMR/retangulos_detect", f"page_{page_idx + 1}_rectangles.jpeg")
-                cv2.imwrite(rects_img_path, img_rects)
-       
+
         def ordenar_pontos(pontos):
             pontos = pontos.reshape(4, 2)
             soma = pontos.sum(axis=1)
             diff = np.diff(pontos, axis=1)
             ordenado = np.zeros((4, 2), dtype="float32")
-            ordenado[0] = pontos[np.argmin(soma)] # Ponto superior esquerdo
-            ordenado[1] = pontos[np.argmin(diff)] # Ponto superior direito
-            ordenado[2] = pontos[np.argmax(soma)] # Ponto inferior direito
-            ordenado[3] = pontos[np.argmax(diff)] # Ponto inferior esquerdo
-                        
+            ordenado[0] = pontos[np.argmin(soma)]
+            ordenado[2] = pontos[np.argmax(soma)]
+            ordenado[1] = pontos[np.argmin(diff)]
+            ordenado[3] = pontos[np.argmax(diff)]
             return ordenado
 
         recortes_info = []
@@ -91,16 +77,16 @@ def process_pdf(input_pdf_path, upload_id=1):
             x, y, w, h = cv2.boundingRect(rect)
             recortes_info.append({"x": x, "y": y, "w": w, "h": h, "rect": rect})
 
-        recortes_info = sorted(recortes_info, key=lambda r: (r["y"], -r["w"]))
-        if not recortes_info:
-            #print(f"Página {page_idx + 1}: Nenhum retângulo detectado.")
-            continue
+        recortes_info = sorted(recortes_info, key=lambda r: (r["y"], r["x"]))
 
-        matricula_info = max(recortes_info, key=lambda r: r["w"] * r["h"])
+        #if len(recortes_info) < 5:
+        #    print(f"Página {page_idx + 1}: menos de 5 retângulos detectados.")
+        #    continue
 
-
+        # Detecta a matrícula como o recorte mais largo e mais estreito verticalmente (padrão típico)
+        recortes_info_sorted = sorted(recortes_info, key=lambda r: (r["w"] / r["h"]), reverse=True)
+        matricula_info = recortes_info_sorted[0]
         cutout_infos = [r for r in recortes_info if r != matricula_info]
-        cutout_infos = sorted(cutout_infos, key=lambda r: r["x"])
 
         cutout_paths = []
         for idx, info in enumerate(cutout_infos):
@@ -127,6 +113,7 @@ def process_pdf(input_pdf_path, upload_id=1):
             cv2.imwrite(path, thresh)
             cutout_paths.append(path)
 
+        # Trata a imagem de matrícula
         x, y, w, h = cv2.boundingRect(matricula_info["rect"])
         matricula_img = img[y:y + h, x:x + w]
         matricula_gray = cv2.cvtColor(matricula_img, cv2.COLOR_BGR2GRAY)
@@ -134,13 +121,9 @@ def process_pdf(input_pdf_path, upload_id=1):
         matricula_path = os.path.join(matricula_dir, f"matricula_{page_idx + 1}.png")
         cv2.imwrite(matricula_path, matricula_thresh)
 
-        total_questions = 60
-        options = 5
-        cols = 4
-        questions_per_col = total_questions // cols
-
         def detect_marked_choice_vector(thresh_question):
             height, width = thresh_question.shape
+            options = 5
             new_width = width - (width % options)
             thresh_question = thresh_question[:, :new_width]
             columns = np.hsplit(thresh_question, options)
@@ -160,6 +143,8 @@ def process_pdf(input_pdf_path, upload_id=1):
             return vector
 
         answers = []
+        total_questions = 60
+        questions_per_col = total_questions // 4
         for col_idx, path in enumerate(cutout_paths):
             img_col = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
             if img_col is None:
@@ -194,11 +179,11 @@ def process_pdf(input_pdf_path, upload_id=1):
                 if len(marked_indices) == 1:
                     matricula_digits.append(str(marked_indices[0]))
                 else:
-                    matricula_digits.append(None)
+                    matricula_digits.append("_")
             return matricula_digits
 
         matricula_digits = detect_marked_matricula(matricula_thresh)
-        matricula_str = "".join(d if d else "_" for d in matricula_digits)
+        matricula_str = "".join(matricula_digits)
 
         agrupamento_colunas = {}
         for (num, vec) in answers:
@@ -239,22 +224,16 @@ def process_pdf(input_pdf_path, upload_id=1):
                 f_csv.write(linha_csv + "\n")
                 print(linha_csv)
 
-    #print(f"✔ Processamento concluído! Resultados salvos em: {json_dir}")
-
 if __name__ == "__main__":
     upload_counter = 1
     gabarito_id = sys.argv[1]
     nome_arquivo = Path(sys.argv[2]).stem
-    #gabarito_id = 0
-    #print(gabarito_id)
-    #print(nome_arquivo)
-
 
     for file in os.listdir(BASE_INPUT_DIR):
         if file.lower().endswith(".pdf"):
             full_path = os.path.join(BASE_INPUT_DIR, file)
             try:
-                process_pdf(full_path, upload_id=upload_counter)
+                process_pdf(full_path, upload_id=upload_counter, gabarito_id=gabarito_id, nome_arquivo=nome_arquivo)
                 upload_counter += 1
                 processed_dir = os.path.join(BASE_INPUT_DIR, "processados")
                 os.makedirs(processed_dir, exist_ok=True)
