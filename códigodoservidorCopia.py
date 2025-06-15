@@ -153,11 +153,11 @@ def process_pdf(input_pdf_path, upload_id=1):
                 return [0] * options
 
             # Determina um valor absoluto mínimo para considerar como marca real
-            min_absolute_pixels = 500
+            min_absolute_pixels = 650 # valor não pode ser muito baixo, pois pode incluir ruído
 
             # E também um limiar relativo baseado no valor máximo entre as alternativas
             max_count = max(pixel_counts)
-            relative_threshold = max_count * 0.4
+            relative_threshold = max_count * 0.4 # 40% é o valor mínimo para considerar uma marcação, menos que isso é considerado ruído
 
             vector = [
                 1 if count >= max(min_absolute_pixels, relative_threshold) else 0

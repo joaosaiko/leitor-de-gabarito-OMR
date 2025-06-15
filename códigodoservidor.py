@@ -151,7 +151,7 @@ def process_pdf(input_pdf_path, upload_id=1):
                 return [0] * options
 
             max_count = max(pixel_counts)
-            threshold = max_count * 0.6
+            threshold = max_count * 0.6 
             vector = [1 if count >= threshold else 0 for count in pixel_counts]
 
             if vector.count(1) != 1:
