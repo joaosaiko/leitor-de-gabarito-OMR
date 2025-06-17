@@ -14,7 +14,6 @@ from pathlib import Path
 BASE_INPUT_DIR = r"C:\appprointer\app\data\PDF"
 BASE_OUTPUT_DIR = r"C:\appprointer\app\data\Processados"
 
-
 # Cria diretórios se não existirem
 os.makedirs(BASE_INPUT_DIR, exist_ok=True)
 os.makedirs(BASE_OUTPUT_DIR, exist_ok=True)
@@ -98,7 +97,6 @@ def process_pdf(input_pdf_path, upload_id=1):
 
         matricula_info = max(recortes_info, key=lambda r: r["w"] * r["h"])
 
-
         cutout_infos = [r for r in recortes_info if r != matricula_info]
         cutout_infos = sorted(cutout_infos, key=lambda r: r["x"])
 
@@ -148,28 +146,27 @@ def process_pdf(input_pdf_path, upload_id=1):
 
             total_pixels = sum(pixel_counts)
 
-            # Ignorar completamente se não tiver praticamente nenhuma marcação
+            # IGNORAR completamente questões com quase nenhum pixel total
             if total_pixels < 1000:
                 return [0] * options
 
-            # Determina um valor absoluto mínimo para considerar como marca real
-            min_absolute_pixels = 650 # valor não pode ser muito baixo, pois pode incluir ruído
+            # Limiar absoluto mais alto para evitar ruído
+            min_absolute_pixels = 650
 
-            # E também um limiar relativo baseado no valor máximo entre as alternativas
+            # Limiar relativo mais rigoroso
             max_count = max(pixel_counts)
-            relative_threshold = max_count * 0.4 # 40% é o valor mínimo para considerar uma marcação, menos que isso é considerado ruído
+            relative_threshold = max_count * 0.6
 
             vector = [
                 1 if count >= max(min_absolute_pixels, relative_threshold) else 0
                 for count in pixel_counts
             ]
 
-            # Permitir no máximo duas marcações válidas
+            # Se por algum motivo mais de 2 marcas foram detectadas, anula a questão
             if vector.count(1) > 2:
-                return [0] * options  # Marca como inválido
+                return [0] * options
 
             return vector
-
 
         answers = []
         for col_idx, path in enumerate(cutout_paths):

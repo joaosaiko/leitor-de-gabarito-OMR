@@ -56,7 +56,7 @@ def process_pdf(input_pdf_path, upload_id=1):
         thresh = cv2.adaptiveThreshold(blur, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 11, 2) # Aplica o limiar adaptativo
         kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (4, 4)) # Em casos de não identificação das colunas mudar o kernel para operações morfológicas
         morph = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel) # Aplica fechamento morfológico
-        canny = cv2.Canny(morph, 50, 150) # Ajuste os valores de limiar conforme necessário
+        canny = cv2.Canny(morph, 70, 180) # Ajuste os valores de limiar conforme necessário
 
         contours, _ = cv2.findContours(canny, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE) # Encontra os contornos na imagem
         rectangles = []
@@ -151,10 +151,10 @@ def process_pdf(input_pdf_path, upload_id=1):
                 return [0] * options
 
             max_count = max(pixel_counts)
-            threshold = max_count * 0.6 
+            threshold = max_count * 0.4 
             vector = [1 if count >= threshold else 0 for count in pixel_counts]
 
-            if vector.count(1) != 1:
+            if vector.count(1) > 2:
                 return [0] * options
 
             return vector
@@ -189,7 +189,7 @@ def process_pdf(input_pdf_path, upload_id=1):
                 digit_rows = np.vsplit(col, 10)
                 pixel_counts = [cv2.countNonZero(row) for row in digit_rows]
                 max_count = max(pixel_counts)
-                threshold = max_count * 0.7
+                threshold = max_count * 0.6
                 marked_indices = [i for i, count in enumerate(pixel_counts) if count >= threshold]
                 if len(marked_indices) == 1:
                     matricula_digits.append(str(marked_indices[0]))
