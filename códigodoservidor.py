@@ -54,7 +54,7 @@ def process_pdf(input_pdf_path, upload_id=1):
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY) # Converte a imagem para escala de cinza
         blur = cv2.GaussianBlur(gray, (5, 5), 0) # Ajuste o tamanho do kernel conforme necessário
         thresh = cv2.adaptiveThreshold(blur, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 11, 2) # Aplica o limiar adaptativo
-        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (4, 4)) # Em casos de não identificação das colunas mudar o kernel para operações morfológicas
+        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3)) # Em casos de não identificação das colunas mudar o kernel para operações morfológicas
         morph = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel) # Aplica fechamento morfológico
         canny = cv2.Canny(morph, 50, 150) # Ajuste os valores de limiar conforme necessário
 
@@ -71,7 +71,7 @@ def process_pdf(input_pdf_path, upload_id=1):
                 # Salva imagem com retângulos detectados
                 img_rects = img.copy()
                 cv2.drawContours(img_rects, rectangles, -1, (0, 255, 0), 3)
-                rects_img_path = os.path.join("C:/Users/joaosaiko/Desktop/PROINT/leitor-de-gabarito-OMR/retangulos_detect", f"page_{page_idx + 1}_rectangles.jpeg")
+                rects_img_path = os.path.join("C:/Users/estagiario.inovacao/Desktop/leitor-de-gabarito-OMR/retangulos_detect", f"page_{page_idx + 1}_rectangles.jpeg")
                 cv2.imwrite(rects_img_path, img_rects)
        
         def ordenar_pontos(pontos):
@@ -151,7 +151,7 @@ def process_pdf(input_pdf_path, upload_id=1):
                 return [0] * options
 
             max_count = max(pixel_counts)
-            threshold = max_count * 0.4 
+            threshold = max_count * 0.4 # 40 melhor valor, menos que isso gera ruído
             vector = [1 if count >= threshold else 0 for count in pixel_counts]
 
             if vector.count(1) > 2:
@@ -182,19 +182,31 @@ def process_pdf(input_pdf_path, upload_id=1):
             thresh_matricula = thresh_matricula[:, :new_width]
             columns = np.hsplit(thresh_matricula, num_digits)
             matricula_digits = []
+            
             for col in columns:
                 col_height = col.shape[0]
                 adjusted_height = col_height - (col_height % 10)
                 col = col[:adjusted_height, :]
                 digit_rows = np.vsplit(col, 10)
                 pixel_counts = [cv2.countNonZero(row) for row in digit_rows]
-                max_count = max(pixel_counts)
-                threshold = max_count * 0.6
+                
+                # Filtra os valores que são maiores que 1500
+                valid_pixel_counts = [count for count in pixel_counts if count > 1500]
+                
+                # Se houver valores válidos, seleciona o máximo
+                if valid_pixel_counts:
+                    max_count = max(valid_pixel_counts)
+                else:
+                    max_count = 0  # ou outro valor de fallback se nenhum valor válido for encontrado
+                
+                threshold = max_count * 0.7  # 70% do valor máximo como limite
                 marked_indices = [i for i, count in enumerate(pixel_counts) if count >= threshold]
+                
                 if len(marked_indices) == 1:
                     matricula_digits.append(str(marked_indices[0]))
                 else:
                     matricula_digits.append(None)
+            
             return matricula_digits
 
         matricula_digits = detect_marked_matricula(matricula_thresh)
