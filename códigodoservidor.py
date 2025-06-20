@@ -51,9 +51,9 @@ def process_pdf(input_pdf_path, upload_id=1):
             print(f"Erro: Não foi possível ler a imagem salva em {jpeg_path}")
             continue
 
-        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY) # Converte a imagem para escala de cinza
-        blur = cv2.GaussianBlur(gray, (5, 5), 0) # Ajuste o tamanho do kernel conforme necessário
-        thresh = cv2.adaptiveThreshold(blur, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 11, 2) # Aplica o limiar adaptativo
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        blur = cv2.GaussianBlur(gray, (5, 5), 0)
+        thresh = cv2.adaptiveThreshold(blur, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 11, 2)
         kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3)) # Em casos de não identificação das colunas mudar o kernel para operações morfológicas
         morph = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel) # Aplica fechamento morfológico
         canny = cv2.Canny(morph, 50, 150) # Ajuste os valores de limiar conforme necessário
@@ -139,6 +139,7 @@ def process_pdf(input_pdf_path, upload_id=1):
         cols = 4
         questions_per_col = total_questions // cols
 
+        #funcao para detectar o vetor de escolhas marcadas
         def detect_marked_choice_vector(thresh_question):
             height, width = thresh_question.shape
             new_width = width - (width % options)
@@ -147,11 +148,12 @@ def process_pdf(input_pdf_path, upload_id=1):
             pixel_counts = [cv2.countNonZero(col) for col in columns]
 
             total_pixels = sum(pixel_counts)
-            if total_pixels < 1000:
+            # estrutura de decisão para evitar processamento desnecessário
+            if total_pixels < 800: 
                 return [0] * options
 
             max_count = max(pixel_counts)
-            threshold = max_count * 0.4 # 40 melhor valor, menos que isso gera ruído
+            threshold = max_count * 0.5 # 50% melhor valor, menos que isso gera ruído
             vector = [1 if count >= threshold else 0 for count in pixel_counts]
 
             if vector.count(1) > 2:
@@ -175,6 +177,7 @@ def process_pdf(input_pdf_path, upload_id=1):
                 question_number = col_idx * questions_per_col + i + 1
                 answers.append((question_number, vector))
 
+        # funcao para detectar a matrícula
         def detect_marked_matricula(thresh_matricula):
             height, width = thresh_matricula.shape
             num_digits = 8
