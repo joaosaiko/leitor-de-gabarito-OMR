@@ -147,19 +147,31 @@ def process_pdf(input_pdf_path, upload_id=1):
             columns = np.hsplit(thresh_question, options)
             pixel_counts = [cv2.countNonZero(col) for col in columns]
 
-            total_pixels = sum(pixel_counts)
-            # estrutura de decisão para evitar processamento desnecessário
-            if total_pixels < 800: 
+            # Critério absoluto de mínimo de tinta por coluna (exemplo: 1500 pixels)
+            absolute_min = 1500
+            candidates = [(idx, count) for idx, count in enumerate(pixel_counts) if count >= absolute_min]
+
+            if not candidates:
+                # Nenhuma opção com tinta suficiente
                 return [0] * options
 
-            max_count = max(pixel_counts)
-            threshold = max_count * 0.5 # 50% melhor valor, menos que isso gera ruído
-            vector = [1 if count >= threshold else 0 for count in pixel_counts]
+            # Ordenar candidatos por quantidade de tinta
+            candidates.sort(key=lambda x: x[1], reverse=True)
 
-            if vector.count(1) > 2:
-                return [0] * options
+            if len(candidates) == 1:
+                # Só uma tem tinta suficiente
+                vector = [1 if idx == candidates[0][0] else 0 for idx in range(options)]
+                return vector
 
-            return vector
+            # Se houver duas ou mais, comparar diferença entre a maior e a segunda maior
+            top, second = candidates[0], candidates[1]
+            if top[1] >= second[1] * 1.5:
+                # Só aceita se a maior for pelo menos 50% maior que a segunda
+                vector = [1 if idx == top[0] else 0 for idx in range(options)]
+                return vector
+
+            # Caso contrário (empate ou diferença pequena), considera anulado
+            return [0] * options
 
         answers = []
         for col_idx, path in enumerate(cutout_paths):
