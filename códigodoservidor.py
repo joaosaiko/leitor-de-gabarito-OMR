@@ -54,7 +54,7 @@ def process_pdf(input_pdf_path, upload_id=1):
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         blur = cv2.GaussianBlur(gray, (5, 5), 0)
         thresh = cv2.adaptiveThreshold(blur, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 11, 2)
-        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3)) # Em casos de não identificação das colunas mudar o kernel para operações morfológicas
+        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 2)) # Em casos de não identificação das colunas mudar o kernel para operações morfológicas
         morph = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel) # Aplica fechamento morfológico
         canny = cv2.Canny(morph, 50, 150) # Ajuste os valores de limiar conforme necessário
 
