@@ -31,14 +31,7 @@ git clone https://github.com/joaosaiko/leitor-de-gabarito-OMR.git
 ```bash
 pip install -r requirements.txt
 ```
-> ⚠️ Importante: Para a biblioteca pdf2image funcionar corretamente, o Poppler deve ser baixado e adicionado nas variáveis do ambiente do Win ou intalado via terminal em quaisquer linux de base Debian ou Arch Linux.
-
----
-
-4
- o
- 43
-```
+> ⚠️ Importante: Para a biblioteca pdf2image funcionar corretamente, o Poppler deve ser baixado e adicionado ao disco local C:/ nas variáveis do ambiente do Win ou intalado via terminal em quaisquer linux de base Debian ou Arch Linux.
 
 ---
 
@@ -59,49 +52,26 @@ pip install -r requirements.txt
 
 ---
 
-## 📂 Estrutura de Arquivos Temporários
+## 📂 Estrutura de Arquivos e Pastas
 ```bash
-temp/
-└── <session_id>/
-    ├── jpeg/         # Página convertida do PDF em imagem
-    ├── cutouts/      # Imagens cortadas com blocos de respostas
-    ├── matricula/    # Imagem da matrícula marcada
-    ├── json/         # Respostas detectadas e resultado corrigido
+1. C:\appprointer - pasta criada ao executar o código pela primeira vez.
+
+2. C:\appprointer\app - subpasta dentro da pasta principal criada.
+
+3. C:\appprointer\app\data - localizada duas pastas importantes, sendo "PDF" aonde é colocado o pdf na qual será analisado e "Processados" aonde fica todos PDF dos gabaritos processados.
 ```
-
----
-
-## 🔍 Rotas da API
-
-POST /process-pdf
-Faz todo o processamento: conversão, detecção, abstração e armazenamento.
-
-Requisição:
-- Multipart/form-data com campo _file_ (PDF).
-
-Resposta:
-```bash
-{
-  "resultado": { ... },
-  "session_id": "uuid",
-  "mensagem": "Resultado disponível por 10 minutos"
-}
-```
-
-GET /resultado/{session_id}
-Retorna o JSON corrigido, se ainda não tiver expirado.
 
 ---
 
 ## 🧠 Explicações Técnicas
 
-process_pdf(file: UploadFile)
-- Cria pastas temporárias com UUID.
-- Converte PDF para imagem com _pdf2image.convert_from_path._
-- Usa _cv2.Canny_ e _cv2.findContours_ para localizar retângulos (áreas marcadas).
+- Adicionar o modelo de gabarito marcado e digitalizado em PDF na pasta localizada em C:\appprointer\app\data\PDF
+- No Vscode, abrir a pasta do projeto, no terminal executar o comando python códigoservidor.py 123 nome_do_gabarito_pdf
+- será inciado o processo de conversão de PDF para imagem com _pdf2image.convert_from_path._
+- Usará _cv2.Canny_ e _cv2.findContours_ para localizar retângulos (áreas marcadas).
 - Classifica os retângulos: o primeiro identificado é assumido como a matrícula, os demais como colunas de questões.
 - Cada coluna é cortada em blocos (1 bloco por questão) e cada questão é dividida horizontalmente em 5 partes (A, B, C, D, E).
-- A alternativa marcada é a que tiver maior agrupamento de pixel brancos.
+- A alternativa marcada é a que tiver maior agrupamento de pixel brancos, as que possuírem marcação são reconhecidas como 1 e as que não possuí são reconhecidass como 0.
 
 ---
 
@@ -127,16 +97,6 @@ Divide a imagem da matrícula em 8 colunas (1 por dígito).
 - Cada coluna é dividida em 10 blocos horizontais (de 0 a 9).
 - O bloco com maior agrupamento de pixels em branco é considerado o número marcado.
 - Se nenhum bloco ultrapassar o limiar, considera como "não marcado" e adicionado "_" como sinal de que não foi possivel identificar o campo marcado.
-
----
-
-## ⏳ Limpeza Automática
-
-Ao final do processamento, é iniciado um _threading.Thread_ com _sleep(360)_ para excluir automaticamente os arquivos temporários depois de 6 minutos.
-
-```bash
-threading.Thread(target=remove_folder_later, daemon=True).start()
-```
 
 ---
 
