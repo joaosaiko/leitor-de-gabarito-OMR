@@ -1,4 +1,3 @@
-
 import cv2
 import numpy as np
 import os
@@ -51,21 +50,25 @@ def process_pdf(input_pdf_path, upload_id=1):
             print(f"Erro: Não foi possível ler a imagem salva em {jpeg_path}")
             continue
 
+            top, second = candidates[0], candidates[1]
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         blur = cv2.GaussianBlur(gray, (5, 5), 0)
         thresh = cv2.adaptiveThreshold(blur, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 11, 2)
-        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 2)) # Em casos de não identificação das colunas mudar o kernel para operações morfológicas
+        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (4, 4)) # Em casos de não identificação das colunas mudar o kernel para operações morfológicas
         morph = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel) # Aplica fechamento morfológico
-        canny = cv2.Canny(morph, 50, 150) # Ajuste os valores de limiar conforme necessário
+        canny = cv2.Canny(morph, 70, 130) # Ajuste os valores de limiar conforme necessário
 
         contours, _ = cv2.findContours(canny, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE) # Encontra os contornos na imagem
         rectangles = []
         for cnt in contours:
-            area = cv2.contourArea(cnt) # Calcula a área do contorno
+            area = cv2.contourArea(cnt)
             if area > 2000:
-                peri = cv2.arcLength(cnt, True) 
+                peri = cv2.arcLength(cnt, True)
                 approx = cv2.approxPolyDP(cnt, 0.02 * peri, True)
                 if len(approx) == 4:
+                    x, y, w, h = cv2.boundingRect(approx)
+                    if y < 550:
+                        continue
                     rectangles.append(approx)
         
                 # Salva imagem com retângulos detectados
@@ -98,7 +101,6 @@ def process_pdf(input_pdf_path, upload_id=1):
 
         matricula_info = max(recortes_info, key=lambda r: r["w"] * r["h"])
 
-
         cutout_infos = [r for r in recortes_info if r != matricula_info]
         cutout_infos = sorted(cutout_infos, key=lambda r: r["x"])
 
@@ -130,7 +132,7 @@ def process_pdf(input_pdf_path, upload_id=1):
         x, y, w, h = cv2.boundingRect(matricula_info["rect"])
         matricula_img = img[y:y + h, x:x + w]
         matricula_gray = cv2.cvtColor(matricula_img, cv2.COLOR_BGR2GRAY)
-        matricula_thresh = cv2.threshold(matricula_gray, 170, 255, cv2.THRESH_BINARY_INV)[1]
+        matricula_thresh = cv2.threshold(matricula_gray, 180, 255, cv2.THRESH_BINARY_INV)[1]
         matricula_path = os.path.join(matricula_dir, f"matricula_{page_idx + 1}.png")
         cv2.imwrite(matricula_path, matricula_thresh)
 
@@ -139,39 +141,29 @@ def process_pdf(input_pdf_path, upload_id=1):
         cols = 4
         questions_per_col = total_questions // cols
 
-        #funcao para detectar o vetor de escolhas marcadas
-        def detect_marked_choice_vector(thresh_question):
+        # voltei para a estrutura antiga
+        def detect_marked_choice_vector(thresh_question, options=5):
             height, width = thresh_question.shape
             new_width = width - (width % options)
             thresh_question = thresh_question[:, :new_width]
             columns = np.hsplit(thresh_question, options)
+
             pixel_counts = [cv2.countNonZero(col) for col in columns]
+            total_pixels = sum(pixel_counts)
+ 
+            max_count = max(pixel_counts)
+            threshold_rel = max_count * 0.7  # aumente para 70%
+            threshold_abs = 800              # novo valor mínimo absoluto
 
-            # Critério absoluto de mínimo de tinta por coluna (exemplo: 1500 pixels)
-            absolute_min = 1500
-            candidates = [(idx, count) for idx, count in enumerate(pixel_counts) if count >= absolute_min]
+            if max_count < 3000:
+                return [0] * options
+            
+            vector = [1 if count >= threshold_rel and count >= threshold_abs else 0 for count in pixel_counts]
 
-            if not candidates:
-                # Nenhuma opção com tinta suficiente
+            if vector.count(1) > 2:  # agora só aceita até duas marcação
                 return [0] * options
 
-            # Ordenar candidatos por quantidade de tinta
-            candidates.sort(key=lambda x: x[1], reverse=True)
-
-            if len(candidates) == 1:
-                # Só uma tem tinta suficiente
-                vector = [1 if idx == candidates[0][0] else 0 for idx in range(options)]
-                return vector
-
-            # Se houver duas ou mais, comparar diferença entre a maior e a segunda maior
-            top, second = candidates[0], candidates[1]
-            if top[1] >= second[1] * 1.5:
-                # Só aceita se a maior for pelo menos 50% maior que a segunda
-                vector = [1 if idx == top[0] else 0 for idx in range(options)]
-                return vector
-
-            # Caso contrário (empate ou diferença pequena), considera anulado
-            return [0] * options
+            return vector
 
         answers = []
         for col_idx, path in enumerate(cutout_paths):
@@ -191,38 +183,53 @@ def process_pdf(input_pdf_path, upload_id=1):
 
         # funcao para detectar a matrícula
         def detect_marked_matricula(thresh_matricula):
-            height, width = thresh_matricula.shape
+            """
+            Detecta cada dígito da matrícula em thresh_matricula (imagem binária com zeros/brancos e 255/preto).
+            Retorna lista de strings com o dígito detectado ou None se não tiver marcação clara ou houver resposta dupla.
+            """
+
             num_digits = 8
-            new_width = width - (width % num_digits)
-            thresh_matricula = thresh_matricula[:, :new_width]
-            columns = np.hsplit(thresh_matricula, num_digits)
-            matricula_digits = []
-            
-            for col in columns:
-                col_height = col.shape[0]
-                adjusted_height = col_height - (col_height % 10)
-                col = col[:adjusted_height, :]
-                digit_rows = np.vsplit(col, 10)
-                pixel_counts = [cv2.countNonZero(row) for row in digit_rows]
-                
-                # Filtra os valores que são maiores que 1500
-                valid_pixel_counts = [count for count in pixel_counts if count > 1500]
-                
-                # Se houver valores válidos, seleciona o máximo
-                if valid_pixel_counts:
-                    max_count = max(valid_pixel_counts)
+            h, w = thresh_matricula.shape
+
+            # Garante que a largura seja múltipla de num_digits
+            w0 = w - (w % num_digits)
+            thresh_matricula = thresh_matricula[:, :w0]
+
+            # corta colunas
+            cols = np.hsplit(thresh_matricula, num_digits)
+            resultado = []
+
+            for col in cols:
+                ch, cw = col.shape
+
+                # remove margens (5% em cada borda) para evitar contagem de borda
+                mh = max(1, ch // 20)
+                mw = max(1, cw // 20)
+                crop = col[mh:ch - mh, mw:cw - mw]
+
+                # divide em 10 linhas iguais
+                rh = crop.shape[0] - (crop.shape[0] % 10)
+                rows = np.vsplit(crop[:rh, :], 10)
+
+                # conta pixels brancos em cada faixa
+                pixel_counts = [cv2.countNonZero(r) for r in rows]
+
+                idx_max = int(np.argmax(pixel_counts))
+                max_count = pixel_counts[idx_max]
+
+                # calcula área aproximada de cada "círculo"
+                area = crop.shape[1] * (crop.shape[0] / 10)
+                limiar_abs = area * 0.3  # exige pelo menos 30% da área preenchida
+
+                # nova verificação de múltiplas marcações
+                marcacoes_validas = [i for i, count in enumerate(pixel_counts) if count >= max_count * 0.7]
+
+                if max_count >= limiar_abs and len(marcacoes_validas) == 1:
+                    resultado.append(str(idx_max))
                 else:
-                    max_count = 0  # ou outro valor de fallback se nenhum valor válido for encontrado
-                
-                threshold = max_count * 0.7  # 70% do valor máximo como limite
-                marked_indices = [i for i, count in enumerate(pixel_counts) if count >= threshold]
-                
-                if len(marked_indices) == 1:
-                    matricula_digits.append(str(marked_indices[0]))
-                else:
-                    matricula_digits.append(None)
-            
-            return matricula_digits
+                    resultado.append(None)
+
+            return resultado
 
         matricula_digits = detect_marked_matricula(matricula_thresh)
         matricula_str = "".join(d if d else "_" for d in matricula_digits)

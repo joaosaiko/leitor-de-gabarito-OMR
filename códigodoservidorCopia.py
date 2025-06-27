@@ -98,7 +98,6 @@ def process_pdf(input_pdf_path, upload_id=1):
 
         matricula_info = max(recortes_info, key=lambda r: r["w"] * r["h"])
 
-
         cutout_infos = [r for r in recortes_info if r != matricula_info]
         cutout_infos = sorted(cutout_infos, key=lambda r: r["x"])
 
@@ -147,8 +146,6 @@ def process_pdf(input_pdf_path, upload_id=1):
             columns = np.hsplit(thresh_question, options)
             pixel_counts = [cv2.countNonZero(col) for col in columns]
             
-            print(pixel_counts)
-            
             total_pixels = sum(pixel_counts)
             # estrutura de decisão para evitar processamento desnecessário
             if total_pixels < 800: # valor padrao 800 
@@ -156,13 +153,13 @@ def process_pdf(input_pdf_path, upload_id=1):
 
             max_count = max(pixel_counts)
             threshold = max_count * 0.5 # 50% melhor valor, menos que isso gera ruído
+            
             vector = [1 if count >= threshold else 0 for count in pixel_counts]
-
+            
             if vector.count(1) > 2:
                 return [0] * options
 
             return vector
-
 
         answers = []
         for col_idx, path in enumerate(cutout_paths):
@@ -255,7 +252,7 @@ def process_pdf(input_pdf_path, upload_id=1):
             for resp in pagina_info["respostas"]:
                 linha_csv = f"{gabarito_id};{nome_arquivo}_page_{pag};{pagina_info['matricula']};{resp['questao']};" + ";".join(str(x) for x in resp['resposta_vetorial'])
                 f_csv.write(linha_csv + "\n")
-                # print(linha_csv)
+                print(linha_csv)
 
     #print(f"✔ Processamento concluído! Resultados salvos em: {json_dir}")
 
