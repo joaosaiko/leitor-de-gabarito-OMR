@@ -152,7 +152,7 @@ def process_pdf(input_pdf_path, upload_id=1):
             total_pixels = sum(pixel_counts)
  
             max_count = max(pixel_counts)
-            threshold_rel = max_count * 0.7  # aumente para 70%
+            threshold_rel = max_count * 0.5  # aumente para 70%
             threshold_abs = 800              # novo valor mínimo absoluto
 
             if max_count < 3000:
