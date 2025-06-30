@@ -141,7 +141,6 @@ def process_pdf(input_pdf_path, upload_id=1):
         cols = 4
         questions_per_col = total_questions // cols
 
-        # voltei para a estrutura antiga
         def detect_marked_choice_vector(thresh_question, options=5):
             height, width = thresh_question.shape
             new_width = width - (width % options)
@@ -153,11 +152,11 @@ def process_pdf(input_pdf_path, upload_id=1):
             #print(pixel_counts)
  
             max_count = max(pixel_counts)
-            threshold_rel = max_count * 0.5  # aumente para 70%
+            threshold_rel = max_count * 0.5  # aceita até 50% do máximo
             threshold_abs = 800              # novo valor mínimo absoluto
 
             for k in range(len(pixel_counts)):
-                if pixel_counts[k] < 2800:
+                if pixel_counts[k] < 2800: # se estiver zerando valores desnecessarios mexer aqui
                     pixel_counts[k] = 0
             
             vector = [1 if count >= threshold_rel and count >= threshold_abs else 0 for count in pixel_counts]
