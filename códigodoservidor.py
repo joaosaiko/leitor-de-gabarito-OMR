@@ -149,14 +149,16 @@ def process_pdf(input_pdf_path, upload_id=1):
             columns = np.hsplit(thresh_question, options)
 
             pixel_counts = [cv2.countNonZero(col) for col in columns]
-            total_pixels = sum(pixel_counts)
+            
+            #print(pixel_counts)
  
             max_count = max(pixel_counts)
             threshold_rel = max_count * 0.5  # aumente para 70%
             threshold_abs = 800              # novo valor mínimo absoluto
 
-            if max_count < 3000:
-                return [0] * options
+            for k in range(len(pixel_counts)):
+                if pixel_counts[k] < 2800:
+                    pixel_counts[k] = 0
             
             vector = [1 if count >= threshold_rel and count >= threshold_abs else 0 for count in pixel_counts]
 
